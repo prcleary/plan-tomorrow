@@ -507,7 +507,8 @@
                 if (selected.size === items.length) break;
             }
             
-            return result.sort((a, b) => b.weight - a.weight);
+            // Return in random selection order (not sorted by weight)
+            return result;
         }
 
         // Process and run
