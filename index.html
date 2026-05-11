@@ -339,8 +339,17 @@
             const saved = localStorage.getItem('planTomorrowState');
             if (saved) {
                 state = JSON.parse(saved);
+                
+                // Convert time strings back to Date objects in calendarSlots
+                if (state.calendarSlots && state.calendarSlots.length > 0) {
+                    state.calendarSlots = state.calendarSlots.map(slot => ({
+                        ...slot,
+                        time: new Date(slot.time)
+                    }));
+                }
+                
                 restoreInputs();
-                if (state.randomisedItems.length > 0) {
+                if (state.randomisedItems.length > 0 || state.calendarSlots.length > 0) {
                     renderRandomised();
                     renderCalendar();
                 }
