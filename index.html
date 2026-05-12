@@ -96,6 +96,12 @@
 
         .form-group {
             margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .form-group:last-of-type {
+            border-bottom: none;
         }
 
         label {
@@ -103,6 +109,57 @@
             font-weight: 600;
             margin-bottom: 0.3rem;
             font-size: 0.9rem;
+            position: relative;
+        }
+
+        .label-with-counter {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .counter {
+            font-size: 0.75rem;
+            color: #888;
+            font-weight: normal;
+        }
+
+        .counter.has-content {
+            color: #4db8ff;
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+            text-align: center;
+            background: #4db8ff;
+            color: #1a1a1a;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 0.5rem;
+            position: relative;
+        }
+
+        .info-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 0;
+            top: 25px;
+            background: #2c3e50;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            width: 300px;
+            font-size: 0.8rem;
+            font-weight: normal;
+            line-height: 1.4;
+            white-space: pre-line;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
 
         input[type="datetime-local"],
@@ -320,6 +377,11 @@
         <div class="column input-column">
             <h2>Input</h2>
 
+            <div class="buttons" style="margin-bottom: 1rem;">
+                <button id="runBtnTop" class="btn-primary" disabled>Enter Data</button>
+                <button id="clearBtnTop" class="btn-secondary">Clear Data</button>
+            </div>
+
             <form id="inputForm">
                 <div class="form-group">
                     <label for="startTime">Start Time <span class="required">*</span></label>
@@ -327,27 +389,58 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="habits">Habits (one per line)</label>
+                    <label for="habits">
+                        <div class="label-with-counter">
+                            <span>Habits (one per line)</span>
+                            <span class="counter" id="habitsCounter">0 lines</span>
+                        </div>
+                    </label>
                     <textarea id="habits" rows="5"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="projects">Projects (one per line, ordered by importance)</label>
+                    <label for="projects">
+                        <div class="label-with-counter">
+                            <span>Projects (one per line, ordered by importance)</span>
+                            <span class="counter" id="projectsCounter">0 lines</span>
+                        </div>
+                    </label>
                     <textarea id="projects" rows="5"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="tasks">Tasks (one per line, ordered by importance)</label>
+                    <label for="tasks">
+                        <div class="label-with-counter">
+                            <span>Tasks (one per line, ordered by importance)</span>
+                            <span class="counter" id="tasksCounter">0 lines</span>
+                        </div>
+                    </label>
                     <textarea id="tasks" rows="10"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="emails">Emails (one per line, ordered by importance)</label>
+                    <label for="emails">
+                        <div class="label-with-counter">
+                            <span>Emails (one per line, ordered by importance)</span>
+                            <span class="counter" id="emailsCounter">0 lines</span>
+                        </div>
+                    </label>
                     <textarea id="emails" rows="10"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label for="calendar">Calendar <span class="required">*</span> (f=free, m=meeting, use numbers for multiple)</label>
+                    <label for="calendar">
+                        Calendar <span class="required">*</span> (f=free, m=meeting, use numbers for multiple)
+                        <span class="info-icon" data-tooltip="Calendar Syntax:
+f = free half-hour
+m = meeting half-hour
+Numbers multiply the preceding character
+
+Examples:
+fmfm = 2 hours (free, meeting, free, meeting)
+m4f2m = 3.5 hours (2hr meeting, 1hr free, 30min meeting)
+f8 = 4 hours free">?</span>
+                    </label>
                     <input type="text" id="calendar" placeholder="e.g., fmfm or m4f2m" required>
                 </div>
             </form>
@@ -424,6 +517,20 @@
             document.getElementById('startTime').value = dateString;
         }
 
+        // Update counters for textareas
+        function updateCounters() {
+            const fields = ['habits', 'projects', 'tasks', 'emails'];
+            fields.forEach(field => {
+                const textarea = document.getElementById(field);
+                const counter = document.getElementById(field + 'Counter');
+                if (textarea && counter) {
+                    const lines = textarea.value.split('\n').filter(x => x.trim()).length;
+                    counter.textContent = lines + (lines === 1 ? ' line' : ' lines');
+                    counter.classList.toggle('has-content', lines > 0);
+                }
+            });
+        }
+
         // Restore inputs from state
         function restoreInputs() {
             document.getElementById('startTime').value = state.startTime;
@@ -432,6 +539,8 @@
             document.getElementById('tasks').value = state.tasks.join('\n');
             document.getElementById('emails').value = state.emails.join('\n');
             document.getElementById('calendar').value = state.calendar;
+            // Update counters after restoring
+            updateCounters();
         }
 
         // Validate form
@@ -818,6 +927,7 @@
                 setDefaultStartTime();
                 document.getElementById('randomisedList').innerHTML = '';
                 document.getElementById('calendarContent').innerHTML = '';
+                updateCounters();
                 saveState();
                 validateForm();
             }
@@ -830,12 +940,34 @@
 
         // Event listeners
         document.getElementById('runBtn').addEventListener('click', run);
+        document.getElementById('runBtnTop').addEventListener('click', run);
         document.getElementById('clearBtn').addEventListener('click', clearData);
+        document.getElementById('clearBtnTop').addEventListener('click', clearData);
         document.getElementById('printBtn').addEventListener('click', printCalendar);
 
         // Form validation
         document.getElementById('inputForm').addEventListener('input', validateForm);
         document.getElementById('inputForm').addEventListener('change', validateForm);
+
+        // Add counter update listeners
+        ['habits', 'projects', 'tasks', 'emails'].forEach(field => {
+            document.getElementById(field).addEventListener('input', updateCounters);
+        });
+
+        // Sync both run buttons
+        function syncRunButtons() {
+            const runBtn = document.getElementById('runBtn');
+            const runBtnTop = document.getElementById('runBtnTop');
+            runBtnTop.disabled = runBtn.disabled;
+            runBtnTop.textContent = runBtn.textContent;
+        }
+
+        // Override validateForm to sync buttons
+        const originalValidateForm = validateForm;
+        validateForm = function() {
+            originalValidateForm();
+            syncRunButtons();
+        };
 
         // Enable dragging back to randomised column
         document.getElementById('randomisedList').addEventListener('dragover', handleDragOver);
@@ -873,6 +1005,7 @@
         // Initialize
         loadState();
         validateForm();
+        updateCounters();
     </script>
 </body>
 </html>
