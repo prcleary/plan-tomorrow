@@ -7,10 +7,15 @@ A mobile-friendly single-page web application for planning your next day with in
 ## Features
 
 - **Smart Randomization**: Generates a weighted random sample of your tasks, emails, and habits based on priority
-- **Auto-Project Placement**: Automatically schedules projects into 2+ hour continuous free blocks
-- **Drag-and-Drop**: Intuitive interface for arranging items in your calendar
+- **Auto-Project Placement**: Automatically schedules one randomly-selected project for each 2-hour chunk in continuous free blocks
+- **Weight Indicators**: Visual opacity and percentage indicators show relative priority of items
+- **Interactive Tooltips**: Hover to see probability weighting explanations for each item
+- **Drag-and-Drop**: Intuitive mouse/touch interface for arranging items in your calendar
+- **Touch/Swipe Support**: Full mobile support with swipe gestures for drag-and-drop
+- **Keyboard Navigation**: Complete keyboard accessibility with Tab/Space/Arrow keys
 - **Local Storage**: All data persists locally in your browser - works offline after first load
 - **Dark Mode**: Easy on the eyes with a modern dark interface
+- **Copy Markdown**: Export your schedule as formatted markdown with task checkboxes
 - **Print Ready**: Print your completed calendar to PDF or paper
 
 ## How to Use
@@ -30,7 +35,7 @@ A mobile-friendly single-page web application for planning your next day with in
 - Ongoing focused work requiring 2+ hour blocks
 - Enter one per line, **ordered by importance** (most important first)
 - Weighted from 0.9 (first) down to 0.5 (minimum)
-- Automatically placed in calendar when 2+ hour continuous free blocks exist
+- One project is randomly selected (weighted by priority) for each 2-hour chunk in continuous free blocks
 
 **Tasks** (optional, but one of Projects/Tasks/Emails required)
 - Items that take less than 30 minutes each
@@ -48,34 +53,59 @@ Enter a string representing your day in half-hour blocks:
 
 - `f` = free half-hour
 - `m` = meeting half-hour
-- Numbers multiply the preceding character
+- Numbers multiply the preceding character (supports multi-digit numbers)
 
 **Examples:**
 - `fmfm` = free, meeting, free, meeting (2 hours total)
 - `m4f2m` = 2-hour meeting, 1-hour free, half-hour meeting (3.5 hours total)
 - `f8m2f4` = 4 hours free, 1 hour meeting, 2 hours free (7 hours total)
+- `f16` = 8 hours free (full working day)
+- `m4f12m2` = 2-hour meeting, 6 hours free, 1-hour meeting (9 hours total)
 
 ### 4. Generate Your Plan
 
 Click **Run/Refresh** to:
 1. Create a randomized list of habits, tasks, and emails (max 50 items)
 2. Generate your calendar with time slots
-3. Auto-place projects into 2+ hour free blocks
+3. Auto-place one randomly-selected project into each 2-hour chunk of continuous free time
+4. Display weight indicators (small numbers) and opacity variations showing relative priority
 
 ### 5. Organize Your Day
 
-- **Drag items** from the Randomised column to free time slots in the Calendar
+**Using Mouse/Trackpad:**
+- Drag items from the Randomised column to free time slots in the Calendar
+- Hover over items to see probability weighting tooltips
+
+**Using Touch/Mobile:**
+- Long-press and swipe items to drag them to calendar slots
+- Visual feedback shows where you're dropping
+
+**Using Keyboard:**
+- Tab to navigate between items and slots
+- Space to pick up/place an item
+- Arrow Up/Down to select destination slot when item is picked up
+- Escape to cancel
+
+**General:**
 - Each free slot can hold **up to 4 items**
 - Drag items back to the Randomised column to remove them
+- Meeting slots show "Meetings schmeetings" (non-editable)
 - Items are color-coded:
   - Purple = Habits
   - Orange = Projects
   - Blue = Tasks
   - Teal = Emails
 
-### 6. Print Your Calendar
+### 6. Export or Print
 
-Click **Print Calendar** to generate a print-ready version (formatted for A4).
+**Copy Markdown:**
+- Click **Copy Markdown** to copy your schedule to clipboard
+- Format includes date heading, time slots, and task checkboxes (`- [ ]`)
+- Meeting slots are consolidated (e.g., "10:30 AM - 11:30 AM: Meetings schmeetings")
+- Paste into Obsidian, Notion, or any markdown-compatible app
+
+**Print Calendar:**
+- Click **Print Calendar** to generate a print-ready version (formatted for A4)
 
 ### 7. Clear and Start Over
 
