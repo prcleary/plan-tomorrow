@@ -1535,11 +1535,13 @@ f16 = 8 hours free (full day)">?</span>
             // Build markdown
             let markdown = `# ${dateStr} ${dayName} note\n\n`;
             
-            // Group items by time slot
-            state.calendarSlots.forEach(slot => {
-                const timeStr = formatTime(slot.time);
+            // Group items by time slot and consolidate consecutive meetings
+            let i = 0;
+            while (i < state.calendarSlots.length) {
+                const slot = state.calendarSlots[i];
                 
                 if (slot.type === 'free' && slot.items.length > 0) {
+                    const timeStr = formatTime(slot.time);
                     markdown += `## ${timeStr}\n\n`;
                     
                     slot.items.forEach(item => {
@@ -1547,11 +1549,31 @@ f16 = 8 hours free (full day)">?</span>
                     });
                     
                     markdown += '\n';
+                    i++;
                 } else if (slot.type === 'meeting') {
-                    markdown += `## ${timeStr}\n\n`;
+                    // Find consecutive meeting slots
+                    const startTime = slot.time;
+                    let endIndex = i;
+                    
+                    while (endIndex < state.calendarSlots.length && 
+                           state.calendarSlots[endIndex].type === 'meeting') {
+                        endIndex++;
+                    }
+                    
+                    // Calculate end time (add 30 minutes to the last meeting slot)
+                    const endTime = new Date(state.calendarSlots[endIndex - 1].time.getTime() + 30 * 60000);
+                    
+                    const startStr = formatTime(startTime);
+                    const endStr = formatTime(endTime);
+                    
+                    markdown += `## ${startStr} - ${endStr}\n\n`;
                     markdown += `Meetings schmeetings\n\n`;
+                    
+                    i = endIndex; // Skip all the meeting slots we just processed
+                } else {
+                    i++;
                 }
-            });
+            }
             
             // Copy to clipboard
             navigator.clipboard.writeText(markdown)
