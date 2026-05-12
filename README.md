@@ -76,10 +76,12 @@ Click **Run/Refresh** to:
 **Using Mouse/Trackpad:**
 - Drag items from the Randomised column to free time slots in the Calendar
 - Hover over items to see probability weighting tooltips
+- Click the **X button** on the right side of any item to remove it
 
 **Using Touch/Mobile:**
 - Long-press and swipe items to drag them to calendar slots
 - Visual feedback shows where you're dropping
+- Tap the **X button** on the right side of any item to remove it
 
 **Using Keyboard:**
 - Tab to navigate between items and slots
@@ -91,6 +93,8 @@ Click **Run/Refresh** to:
 - Each free slot can hold **up to 4 items**
 - **Before** and **After** sections (green borders) accept **unlimited items** for overflow
 - Drag items back to the Randomised column to remove them
+- **Click the X button** on any item (in Randomised list or Calendar) to remove it permanently
+  - Removed items will only reappear if you click **Run/Refresh** to regenerate the randomization
 - Meeting slots show "Meetings schmeetings" (non-editable)
 - Items are color-coded:
   - Purple = Habits

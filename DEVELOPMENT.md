@@ -176,6 +176,41 @@ Meetings schmeetings
 - Task checkbox format `- [ ]` for all items
 - Copies to clipboard via `navigator.clipboard.writeText()`
 
+### 8. Remove Button (X)
+
+**Purpose:** Allow users to permanently remove items from Randomised list or Calendar without re-randomizing
+
+**Implementation:**
+
+**Visual Design:**
+- Small circular button with × symbol (Unicode ×)
+- Positioned on the right side of each lozenge
+- Semi-transparent background (rgba(0,0,0,0.3))
+- Red on hover (rgba(231, 76, 60, 0.8))
+- 14px × 14px size, centered vertically
+
+**CSS Classes:**
+- `.remove-button` - Styling for the X button
+- Absolute positioning within `.lozenge`
+- Lozenge padding-right adjusted to 22px to make room
+
+**Function:** `removeItem(id)`
+- Handles removal from both randomised list and calendar
+- For `random-` prefixed IDs: Removes from `state.randomisedItems` array
+- For `placed-` or `project-` prefixed IDs: Removes from all calendar slots and Before/After sections
+- Calls appropriate render function (`renderRandomised()` or `renderCalendar()`)
+- Saves state to localStorage
+
+**Behavior:**
+- Click handler prevents event propagation (doesn't trigger drag)
+- Item is permanently removed until next randomization
+- No undo capability (user must re-run randomization to get items back)
+
+**Code Locations:**
+- CSS: Lines ~402-440
+- Button creation in `createLozenge()`: Lines ~1188-1196
+- `removeItem()` function: Lines ~1227-1265
+
 ## Critical Implementation Details
 
 ### Start Time Defaulting Issue (FIXED)
@@ -472,6 +507,9 @@ catch(e) { console.error('Corrupted:', e); }
 - Before/After sections added after initial release
 - Syntax error in handleDragOver fixed (line 1370)
 - Documentation improvements and code organization (section headers)
+- Roboto font integration via Google Fonts
+- Timezone fix for Start Time (replaced UTC toISOString with local formatting)
+- Remove button (X) added to all lozenges for permanent item deletion
 
 ## Contributing Guidelines
 

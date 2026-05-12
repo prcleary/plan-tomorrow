@@ -408,6 +408,45 @@
             pointer-events: none;
         }
 
+        .remove-button {
+            position: absolute;
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.55rem;
+            line-height: 1;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 500;
+            transition: background 0.2s, transform 0.2s;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .remove-button:hover {
+            background: rgba(231, 76, 60, 0.8);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .remove-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        /* Adjust lozenge padding to make room for remove button */
+        .lozenge {
+            padding-right: 22px;
+        }
+
         .lozenge[data-tooltip]:hover::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -1136,6 +1175,19 @@ f16 = 8 hours free (full day)">?</span>
             // Add text content
             div.textContent = item.text;
             
+            // Add remove button (X)
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-button';
+            removeBtn.textContent = '×';
+            removeBtn.title = 'Remove this item';
+            removeBtn.setAttribute('aria-label', 'Remove item');
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                removeItem(id);
+            });
+            div.appendChild(removeBtn);
+            
             // Add weight indicator (only for items in randomised list)
             if (item.weight !== undefined && id.startsWith('random-')) {
                 const weightSpan = document.createElement('span');
@@ -1171,6 +1223,52 @@ f16 = 8 hours free (full day)">?</span>
             div.addEventListener('keydown', handleLozengeKeydown);
 
             return div;
+        }
+
+        // Remove an item from randomised list or calendar
+        function removeItem(id) {
+            // Check if it's in the randomised list
+            if (id.startsWith('random-')) {
+                const randomIdx = parseInt(id.split('-')[1]);
+                state.randomisedItems.splice(randomIdx, 1);
+                renderRandomised();
+            } 
+            // Check if it's in calendar slots or special sections (Before/After)
+            else if (id.startsWith('placed-') || id.startsWith('project-')) {
+                // Remove from all calendar slots
+                let removed = false;
+                state.calendarSlots.forEach(slot => {
+                    const originalLength = slot.items.length;
+                    slot.items = slot.items.filter(item => item.id !== id);
+                    if (slot.items.length < originalLength) {
+                        removed = true;
+                    }
+                });
+                
+                // Remove from Before section if present
+                if (state.beforeItems) {
+                    const originalLength = state.beforeItems.length;
+                    state.beforeItems = state.beforeItems.filter(item => item.id !== id);
+                    if (state.beforeItems.length < originalLength) {
+                        removed = true;
+                    }
+                }
+                
+                // Remove from After section if present
+                if (state.afterItems) {
+                    const originalLength = state.afterItems.length;
+                    state.afterItems = state.afterItems.filter(item => item.id !== id);
+                    if (state.afterItems.length < originalLength) {
+                        removed = true;
+                    }
+                }
+                
+                if (removed) {
+                    renderCalendar();
+                }
+            }
+            
+            saveState();
         }
 
         // Keyboard navigation for lozenges
