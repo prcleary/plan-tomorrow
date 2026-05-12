@@ -240,6 +240,15 @@
             background: #229954;
         }
 
+        .btn-export {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .btn-export:hover {
+            background: #8e44ad;
+        }
+
         .lozenge {
             background: #3498db;
             color: white;
@@ -519,7 +528,8 @@ f8 = 4 hours free">?</span>
                 <div class="placeholder" id="calendarPlaceholder">Click Run to build your schedule</div>
             </div>
             <div class="buttons" style="margin-top: 1rem;">
-                <button id="printBtn" class="btn-print">Print Calendar</button>
+                <button id="printBtn" class="btn-print">🖨️ Print Calendar</button>
+                <button id="exportBtn" class="btn-export">Export Data</button>
             </div>
         </div>
     </div>
@@ -1044,6 +1054,66 @@ f8 = 4 hours free">?</span>
             window.print();
         }
 
+        // Export data
+        function exportData() {
+            const exportFormat = confirm('Click OK to export as JSON, or Cancel to export as Text');
+            
+            if (exportFormat) {
+                // Export as JSON
+                const dataStr = JSON.stringify(state, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `plan-tomorrow-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+                showToast('Data exported as JSON');
+            } else {
+                // Export as Text
+                let textData = `PLAN TOMORROW - ${new Date(state.startTime).toLocaleString()}\n\n`;
+                
+                if (state.habits.length > 0) {
+                    textData += `HABITS:\n${state.habits.map((h, i) => `${i + 1}. ${h}`).join('\n')}\n\n`;
+                }
+                
+                if (state.projects.length > 0) {
+                    textData += `PROJECTS:\n${state.projects.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\n`;
+                }
+                
+                if (state.tasks.length > 0) {
+                    textData += `TASKS:\n${state.tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n`;
+                }
+                
+                if (state.emails.length > 0) {
+                    textData += `EMAILS:\n${state.emails.map((e, i) => `${i + 1}. ${e}`).join('\n')}\n\n`;
+                }
+                
+                textData += `CALENDAR:\n`;
+                state.calendarSlots.forEach(slot => {
+                    const timeStr = formatTime(slot.time);
+                    if (slot.type === 'meeting') {
+                        textData += `${timeStr} - MEETING\n`;
+                    } else {
+                        textData += `${timeStr} - FREE`;
+                        if (slot.items.length > 0) {
+                            textData += ` (${slot.items.map(item => item.text).join(', ')})`;
+                        }
+                        textData += '\n';
+                    }
+                });
+                
+                const dataBlob = new Blob([textData], { type: 'text/plain' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `plan-tomorrow-${new Date().toISOString().split('T')[0]}.txt`;
+                link.click();
+                URL.revokeObjectURL(url);
+                showToast('Data exported as Text');
+            }
+        }
+
         // Show toast notification
         function showToast(message) {
             const toast = document.createElement('div');
@@ -1060,6 +1130,7 @@ f8 = 4 hours free">?</span>
         document.getElementById('runBtnTop').addEventListener('click', run);
         document.getElementById('clearBtnTop').addEventListener('click', clearData);
         document.getElementById('printBtn').addEventListener('click', printCalendar);
+        document.getElementById('exportBtn').addEventListener('click', exportData);
 
         // Form validation
         document.getElementById('inputForm').addEventListener('input', validateForm);
