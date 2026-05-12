@@ -4,6 +4,8 @@ A mobile-friendly single-page web application for planning your next day with in
 
 **Live App:** [https://prcleary.github.io/plan-tomorrow/](https://prcleary.github.io/plan-tomorrow/)
 
+![Plan Tomorrow Screenshot](screenshot.png)
+
 ## Features
 
 - **Smart Randomization**: Generates a weighted random sample of your tasks, emails, and habits based on priority
