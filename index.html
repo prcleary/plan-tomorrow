@@ -361,19 +361,9 @@
             line-height: 1.4;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             transition: transform 0.2s, box-shadow 0.2s;
-            animation: fadeIn 0.3s ease-in;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        /* Removed fadeIn animation for smoother drag experience */
 
         .lozenge:hover {
             transform: translateY(-1px);
