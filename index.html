@@ -1357,11 +1357,22 @@ f16 = 8 hours free (full day)">?</span>
             
             // Get all droppable time slots (free slots + special slots) for keyboard navigation
             allTimeSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
-            currentSlotIndex = 0;
+            
+            // Check if user has already focused/selected a slot (via tab or click)
+            const currentlyFocusedSlot = document.activeElement;
+            const focusedSlotIndex = allTimeSlots.findIndex(slot => slot === currentlyFocusedSlot);
+            
+            if (focusedSlotIndex >= 0) {
+                // Start at the currently focused slot
+                currentSlotIndex = focusedSlotIndex;
+            } else {
+                // Default to first slot
+                currentSlotIndex = 0;
+            }
             
             if (allTimeSlots.length > 0) {
-                allTimeSlots[0].classList.add('keyboard-target');
-                allTimeSlots[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                allTimeSlots[currentSlotIndex].classList.add('keyboard-target');
+                allTimeSlots[currentSlotIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
             
             // Add keyboard navigation for arrow keys
@@ -2156,21 +2167,44 @@ f16 = 8 hours free (full day)">?</span>
 
             if (!draggedData || draggedData.id.startsWith('random-')) return;
 
-            // Remove from calendar
+            let itemRemoved = false;
+
+            // Remove from calendar slots
             state.calendarSlots.forEach(slot => {
                 const removedItems = slot.items.filter(item => item.id === draggedData.id);
                 slot.items = slot.items.filter(item => item.id !== draggedData.id);
                 
                 // Add back to randomised if it was originally from there
                 if (removedItems.length > 0 && draggedData.type !== 'project') {
-                    state.randomisedItems.push({
-                        type: draggedData.type,
-                        text: draggedData.text,
-                        weight: 0.5 // Assign default weight for returned items
-                    });
-                    state.randomisedItems.sort((a, b) => b.weight - a.weight);
+                    itemRemoved = true;
                 }
             });
+
+            // Remove from Before/After sections
+            if (state.beforeItems) {
+                const beforeFiltered = state.beforeItems.filter(item => item.id === draggedData.id);
+                state.beforeItems = state.beforeItems.filter(item => item.id !== draggedData.id);
+                if (beforeFiltered.length > 0 && draggedData.type !== 'project') {
+                    itemRemoved = true;
+                }
+            }
+            if (state.afterItems) {
+                const afterFiltered = state.afterItems.filter(item => item.id === draggedData.id);
+                state.afterItems = state.afterItems.filter(item => item.id !== draggedData.id);
+                if (afterFiltered.length > 0 && draggedData.type !== 'project') {
+                    itemRemoved = true;
+                }
+            }
+
+            // Add back to randomised list if item was removed
+            if (itemRemoved) {
+                state.randomisedItems.push({
+                    type: draggedData.type,
+                    text: draggedData.text,
+                    weight: 0.5 // Assign default weight for returned items
+                });
+                state.randomisedItems.sort((a, b) => b.weight - a.weight);
+            }
 
             renderRandomised();
             renderCalendar();
