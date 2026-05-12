@@ -741,6 +741,7 @@ f16 = 8 hours free (full day)">?</span>
             tomorrow.setHours(9, 0, 0, 0);
             const dateString = tomorrow.toISOString().slice(0, 16);
             document.getElementById('startTime').value = dateString;
+            state.startTime = dateString;
         }
 
         // Update counters for textareas
@@ -759,7 +760,12 @@ f16 = 8 hours free (full day)">?</span>
 
         // Restore inputs from state
         function restoreInputs() {
-            document.getElementById('startTime').value = state.startTime;
+            // Set default if startTime is empty
+            if (!state.startTime) {
+                setDefaultStartTime();
+            } else {
+                document.getElementById('startTime').value = state.startTime;
+            }
             document.getElementById('habits').value = state.habits.join('\n');
             document.getElementById('projects').value = state.projects.join('\n');
             document.getElementById('tasks').value = state.tasks.join('\n');
