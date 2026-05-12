@@ -892,10 +892,13 @@ f16 = 8 hours free (full day)">?</span>
 
         // Auto-place projects in 2+ hour continuous free blocks
         function autoPlaceProjects(projects) {
+            if (projects.length === 0) return;
+            
             const freeBlocks = [];
             let blockStart = null;
             let blockLength = 0;
 
+            // Find continuous free blocks
             state.calendarSlots.forEach((slot, idx) => {
                 if (slot.type === 'free') {
                     if (blockStart === null) {
@@ -905,7 +908,7 @@ f16 = 8 hours free (full day)">?</span>
                         blockLength++;
                     }
                 } else {
-                    if (blockLength >= 4) { // 4 half-hours = 2 hours
+                    if (blockLength >= 4) { // 4 half-hours = 2 hours minimum
                         freeBlocks.push({ start: blockStart, length: blockLength });
                     }
                     blockStart = null;
@@ -913,33 +916,37 @@ f16 = 8 hours free (full day)">?</span>
                 }
             });
 
+            // Don't forget the last block if it ends at the end of calendar
             if (blockLength >= 4) {
                 freeBlocks.push({ start: blockStart, length: blockLength });
             }
 
-            // Randomly select and place projects
-            const availableProjects = [...projects];
+            // For each free block, place a project every 2 hours (4 half-hours)
             freeBlocks.forEach(block => {
-                if (availableProjects.length === 0) return;
+                const numTwoHourChunks = Math.floor(block.length / 4);
+                
+                for (let i = 0; i < numTwoHourChunks; i++) {
+                    const chunkStartIndex = block.start + (i * 4);
+                    
+                    // Weighted random selection from ALL projects (can repeat)
+                    const totalWeight = projects.reduce((sum, p) => sum + p.weight, 0);
+                    let random = Math.random() * totalWeight;
+                    let selected = null;
 
-                // Weighted random selection
-                const totalWeight = availableProjects.reduce((sum, p) => sum + p.weight, 0);
-                let random = Math.random() * totalWeight;
-                let selected = null;
-
-                for (let i = 0; i < availableProjects.length; i++) {
-                    random -= availableProjects[i].weight;
-                    if (random <= 0) {
-                        selected = availableProjects.splice(i, 1)[0];
-                        break;
+                    for (let j = 0; j < projects.length; j++) {
+                        random -= projects[j].weight;
+                        if (random <= 0) {
+                            selected = projects[j];
+                            break;
+                        }
                     }
-                }
 
-                if (selected) {
-                    state.calendarSlots[block.start].items.push({
-                        ...selected,
-                        id: `project-${Date.now()}-${Math.random()}`
-                    });
+                    if (selected) {
+                        state.calendarSlots[chunkStartIndex].items.push({
+                            ...selected,
+                            id: `project-${Date.now()}-${Math.random()}`
+                        });
+                    }
                 }
             });
         }
