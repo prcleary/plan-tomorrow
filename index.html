@@ -1010,6 +1010,11 @@ f16 = 8 hours free (full day)">?</span>
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragend', handleDragEnd);
 
+            // Touch event listeners for mobile
+            div.addEventListener('touchstart', handleTouchStart, { passive: false });
+            div.addEventListener('touchmove', handleTouchMove, { passive: false });
+            div.addEventListener('touchend', handleTouchEnd, { passive: false });
+
             // Make lozenges keyboard accessible
             div.tabIndex = 0;
             div.addEventListener('keydown', handleLozengeKeydown);
@@ -1216,6 +1221,14 @@ f16 = 8 hours free (full day)">?</span>
         let currentSlotIndex = 0;
         let allTimeSlots = [];
 
+        // Touch handling for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchElement = null;
+        let touchData = null;
+        let touchClone = null;
+        let isSwiping = false;
+
         function handleDragStart(e) {
             draggedElement = e.target;
             draggedData = {
@@ -1305,6 +1318,143 @@ f16 = 8 hours free (full day)">?</span>
             saveState();
 
             return false;
+        }
+
+        // Touch event handlers for mobile drag-and-drop
+        function handleTouchStart(e) {
+            const lozenge = e.target.classList.contains('lozenge') ? e.target : e.target.closest('.lozenge');
+            if (lozenge && lozenge.dataset.id) {
+                touchElement = lozenge;
+                touchData = {
+                    id: lozenge.dataset.id,
+                    type: lozenge.dataset.type,
+                    text: lozenge.dataset.text
+                };
+                
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                
+                isSwiping = false;
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (!touchElement) return;
+            
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            
+            // Start swiping if moved more than 10px
+            if (!isSwiping && (deltaX > 10 || deltaY > 10)) {
+                isSwiping = true;
+                e.preventDefault();
+                
+                // Create visual clone
+                touchClone = touchElement.cloneNode(true);
+                touchClone.style.position = 'fixed';
+                touchClone.style.left = touch.clientX - 50 + 'px';
+                touchClone.style.top = touch.clientY - 20 + 'px';
+                touchClone.style.width = touchElement.offsetWidth + 'px';
+                touchClone.style.opacity = '0.8';
+                touchClone.style.pointerEvents = 'none';
+                touchClone.style.zIndex = '9999';
+                document.body.appendChild(touchClone);
+                
+                touchElement.style.opacity = '0.3';
+            }
+            
+            if (isSwiping) {
+                e.preventDefault();
+                touchClone.style.left = touch.clientX - 50 + 'px';
+                touchClone.style.top = touch.clientY - 20 + 'px';
+                
+                // Highlight drop target
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                document.querySelectorAll('.time-slot.drag-over').forEach(slot => {
+                    slot.classList.remove('drag-over');
+                });
+                
+                if (elementBelow) {
+                    const slot = elementBelow.closest('.time-slot.free');
+                    if (slot) {
+                        slot.classList.add('drag-over');
+                    }
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchElement) return;
+            
+            if (isSwiping && touchClone) {
+                const touch = e.changedTouches[0];
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                const slot = elementBelow ? elementBelow.closest('.time-slot.free') : null;
+                
+                document.querySelectorAll('.time-slot.drag-over').forEach(s => {
+                    s.classList.remove('drag-over');
+                });
+                
+                if (slot && touchData) {
+                    const slotIndex = parseInt(slot.dataset.index);
+                    const targetSlot = state.calendarSlots[slotIndex];
+                    
+                    // Check if dropping from randomised list
+                    if (touchData.id.startsWith('random-')) {
+                        if (targetSlot.items.length >= 4) {
+                            showToast('Slot full (max 4 items)');
+                        } else {
+                            // Add to calendar slot
+                            const newItem = {
+                                type: touchData.type,
+                                text: touchData.text,
+                                id: `placed-${Date.now()}-${Math.random()}`,
+                                originalId: touchData.id
+                            };
+                            targetSlot.items.push(newItem);
+                            
+                            // Remove from randomised list
+                            const randomIdx = parseInt(touchData.id.split('-')[1]);
+                            state.randomisedItems.splice(randomIdx, 1);
+                            
+                            saveState();
+                            renderRandomised();
+                            renderCalendar();
+                        }
+                    } else if (touchData.id.startsWith('placed-') || touchData.id.startsWith('project-')) {
+                        // Moving within calendar
+                        state.calendarSlots.forEach(s => {
+                            s.items = s.items.filter(item => item.id !== touchData.id);
+                        });
+                        
+                        if (targetSlot.items.length < 4) {
+                            targetSlot.items.push({
+                                type: touchData.type,
+                                text: touchData.text,
+                                id: touchData.id
+                            });
+                            
+                            saveState();
+                            renderRandomised();
+                            renderCalendar();
+                        }
+                    }
+                }
+                
+                // Cleanup
+                touchClone.remove();
+                touchClone = null;
+            }
+            
+            if (touchElement) {
+                touchElement.style.opacity = '';
+            }
+            
+            touchElement = null;
+            touchData = null;
+            isSwiping = false;
         }
 
         // Clear data
