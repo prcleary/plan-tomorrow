@@ -529,7 +529,7 @@ f8 = 4 hours free">?</span>
             </div>
             <div class="buttons" style="margin-top: 1rem;">
                 <button id="printBtn" class="btn-print">🖨️ Print Calendar</button>
-                <button id="exportBtn" class="btn-export">Export Data</button>
+                <button id="exportBtn" class="btn-export">Copy Markdown</button>
             </div>
         </div>
     </div>
@@ -1054,64 +1054,44 @@ f8 = 4 hours free">?</span>
             window.print();
         }
 
-        // Export data
+        // Export data as Markdown to clipboard
         function exportData() {
-            const exportFormat = confirm('Click OK to export as JSON, or Cancel to export as Text');
-            
-            if (exportFormat) {
-                // Export as JSON
-                const dataStr = JSON.stringify(state, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `plan-tomorrow-${new Date().toISOString().split('T')[0]}.json`;
-                link.click();
-                URL.revokeObjectURL(url);
-                showToast('Data exported as JSON');
-            } else {
-                // Export as Text
-                let textData = `PLAN TOMORROW - ${new Date(state.startTime).toLocaleString()}\n\n`;
-                
-                if (state.habits.length > 0) {
-                    textData += `HABITS:\n${state.habits.map((h, i) => `${i + 1}. ${h}`).join('\n')}\n\n`;
-                }
-                
-                if (state.projects.length > 0) {
-                    textData += `PROJECTS:\n${state.projects.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\n`;
-                }
-                
-                if (state.tasks.length > 0) {
-                    textData += `TASKS:\n${state.tasks.map((t, i) => `${i + 1}. ${t}`).join('\n')}\n\n`;
-                }
-                
-                if (state.emails.length > 0) {
-                    textData += `EMAILS:\n${state.emails.map((e, i) => `${i + 1}. ${e}`).join('\n')}\n\n`;
-                }
-                
-                textData += `CALENDAR:\n`;
-                state.calendarSlots.forEach(slot => {
-                    const timeStr = formatTime(slot.time);
-                    if (slot.type === 'meeting') {
-                        textData += `${timeStr} - MEETING\n`;
-                    } else {
-                        textData += `${timeStr} - FREE`;
-                        if (slot.items.length > 0) {
-                            textData += ` (${slot.items.map(item => item.text).join(', ')})`;
-                        }
-                        textData += '\n';
-                    }
-                });
-                
-                const dataBlob = new Blob([textData], { type: 'text/plain' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `plan-tomorrow-${new Date().toISOString().split('T')[0]}.txt`;
-                link.click();
-                URL.revokeObjectURL(url);
-                showToast('Data exported as Text');
+            if (state.calendarSlots.length === 0) {
+                showToast('No calendar data to export');
+                return;
             }
+            
+            // Format date as YYYY-MM-DD
+            const dateObj = new Date(state.startTime);
+            const dateStr = dateObj.toISOString().split('T')[0];
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            // Build markdown
+            let markdown = `# ${dateStr} ${dayName} note\n\n`;
+            
+            // Group items by time slot
+            state.calendarSlots.forEach(slot => {
+                if (slot.type === 'free' && slot.items.length > 0) {
+                    const timeStr = formatTime(slot.time);
+                    markdown += `## ${timeStr}\n\n`;
+                    
+                    slot.items.forEach(item => {
+                        markdown += `- [ ] ${item.text}\n`;
+                    });
+                    
+                    markdown += '\n';
+                }
+            });
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(markdown)
+                .then(() => {
+                    showToast('Markdown copied to clipboard!');
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Failed to copy to clipboard');
+                });
         }
 
         // Show toast notification
