@@ -1257,9 +1257,9 @@ f16 = 8 hours free (full day)">?</span>
             div.addEventListener('touchmove', handleTouchMove, { passive: false });
             div.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-            // Make lozenges keyboard accessible
-            div.tabIndex = 0;
-            div.addEventListener('keydown', handleLozengeKeydown);
+            // Lozenges are not keyboard-focusable with new workflow (use slot-based navigation)
+            // div.tabIndex = 0;
+            // div.addEventListener('keydown', handleLozengeKeydown);
 
             return div;
         }
@@ -1559,6 +1559,7 @@ f16 = 8 hours free (full day)">?</span>
             beforeDiv.addEventListener('click', function() {
                 lastClickedSlot = this;
             });
+            beforeDiv.addEventListener('keydown', handleSlotKeydown);
             
             const beforeItemsDiv = document.createElement('div');
             beforeItemsDiv.className = 'slot-items';
@@ -1593,6 +1594,7 @@ f16 = 8 hours free (full day)">?</span>
                     slotDiv.addEventListener('click', function() {
                         lastClickedSlot = this;
                     });
+                    slotDiv.addEventListener('keydown', handleSlotKeydown);
 
                     const itemsDiv = document.createElement('div');
                     itemsDiv.className = 'slot-items';
@@ -1633,6 +1635,7 @@ f16 = 8 hours free (full day)">?</span>
             afterDiv.addEventListener('click', function() {
                 lastClickedSlot = this;
             });
+            afterDiv.addEventListener('keydown', handleSlotKeydown);
             
             const afterItemsDiv = document.createElement('div');
             afterItemsDiv.className = 'slot-items';
@@ -1656,6 +1659,105 @@ f16 = 8 hours free (full day)">?</span>
         let currentSlotIndex = 0;
         let allTimeSlots = [];
         let lastClickedSlot = null; // Track the last clicked slot for keyboard navigation
+
+        /**
+         * Handle keyboard navigation for slots
+         * Space: Pull first item from randomised list into this slot
+         * Arrow Up/Down: Navigate between slots
+         */
+        function handleSlotKeydown(e) {
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                pullItemIntoSlot(e.currentTarget);
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateSlots(e.currentTarget, e.key === 'ArrowDown' ? 1 : -1);
+            }
+        }
+
+        /**
+         * Pull the first item from randomised list into the specified slot
+         */
+        function pullItemIntoSlot(slotElement) {
+            // Check if there are items in randomised list
+            if (state.randomisedItems.length === 0) {
+                showToast('No items left in randomised list');
+                return;
+            }
+
+            const isSpecialSlot = slotElement.dataset.specialType !== undefined;
+
+            if (isSpecialSlot) {
+                // Handle Before/After sections (unlimited capacity)
+                const specialType = slotElement.dataset.specialType;
+                if (!state.beforeItems) state.beforeItems = [];
+                if (!state.afterItems) state.afterItems = [];
+                const targetArray = specialType === 'before' ? state.beforeItems : state.afterItems;
+
+                // Take first item from randomised list
+                const firstItem = state.randomisedItems[0];
+                const newItem = {
+                    type: firstItem.type,
+                    text: firstItem.text,
+                    id: `placed-${Date.now()}-${Math.random()}`
+                };
+                targetArray.push(newItem);
+
+                // Remove from randomised list
+                state.randomisedItems.splice(0, 1);
+
+            } else {
+                // Handle regular calendar slot (max 4 items)
+                const slotIndex = parseInt(slotElement.dataset.index);
+                const targetSlot = state.calendarSlots[slotIndex];
+
+                if (targetSlot.items.length >= 4) {
+                    showToast('Slot full (max 4 items)');
+                    return;
+                }
+
+                // Take first item from randomised list
+                const firstItem = state.randomisedItems[0];
+                const newItem = {
+                    type: firstItem.type,
+                    text: firstItem.text,
+                    id: `placed-${Date.now()}-${Math.random()}`
+                };
+                targetSlot.items.push(newItem);
+
+                // Remove from randomised list
+                state.randomisedItems.splice(0, 1);
+            }
+
+            saveState();
+            renderRandomised();
+            renderCalendar();
+            
+            // Re-focus the slot after rendering
+            setTimeout(() => {
+                const allSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
+                const slotIndex = allSlots.indexOf(slotElement);
+                if (slotIndex >= 0 && allSlots[slotIndex]) {
+                    allSlots[slotIndex].focus();
+                }
+            }, 10);
+        }
+
+        /**
+         * Navigate between slots using arrow keys
+         */
+        function navigateSlots(currentSlot, direction) {
+            const allSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
+            const currentIndex = allSlots.indexOf(currentSlot);
+            
+            if (currentIndex === -1) return;
+            
+            const nextIndex = currentIndex + direction;
+            if (nextIndex >= 0 && nextIndex < allSlots.length) {
+                allSlots[nextIndex].focus();
+                allSlots[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
 
         // Touch handling for mobile
         let touchStartX = 0;
