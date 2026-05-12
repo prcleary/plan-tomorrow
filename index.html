@@ -1235,6 +1235,7 @@ f16 = 8 hours free (full day)">?</span>
             removeBtn.textContent = '×';
             removeBtn.title = 'Remove this item';
             removeBtn.setAttribute('aria-label', 'Remove item');
+            removeBtn.tabIndex = -1; // Exclude from tab order
             removeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
