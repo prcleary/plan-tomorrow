@@ -355,6 +355,33 @@
             pointer-events: none;
         }
 
+        /* Disable tooltips on touch devices and small screens */
+        @media (hover: none) and (pointer: coarse) {
+            .lozenge[data-tooltip]:hover::after {
+                display: none;
+            }
+            
+            /* Disable hover transform on touch devices */
+            .lozenge:hover {
+                transform: none;
+                box-shadow: none;
+                z-index: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .lozenge[data-tooltip]:hover::after {
+                display: none;
+            }
+            
+            /* Disable hover transform on small screens */
+            .lozenge:hover {
+                transform: none;
+                box-shadow: none;
+                z-index: 1;
+            }
+        }
+
         .lozenge.habit {
             background: #9b59b6;
         }
