@@ -577,6 +577,13 @@
             border-color: #27ae60;
         }
 
+        .special-slot:focus {
+            outline: 2px solid #4db8ff;
+            outline-offset: 2px;
+            border-color: #4db8ff;
+            box-shadow: 0 0 8px rgba(77, 184, 255, 0.5);
+        }
+
         .special-slot .time-label {
             font-weight: bold;
             color: #27ae60;
@@ -675,7 +682,7 @@
     <header>
         <div class="header-left">
             <h1>Plan Tomorrow</h1>
-            <span class="instructions">Set start time, enter items, define calendar (f=free, m=meeting, numbers supported), click Run, then drag/swipe/keyboard to schedule. Before/After sections accept unlimited items.</span>
+            <span class="instructions">Set start time, enter items, define calendar (f=free, m=meeting, numbers supported), click Run. Then use keyboard (Space=add item, arrows=navigate slots) or drag/swipe to schedule. Before/After sections accept unlimited items.</span>
         </div>
         <a href="https://github.com/prcleary/plan-tomorrow" target="_blank" rel="noopener noreferrer" class="source-link">Source</a>
     </header>
@@ -1094,6 +1101,14 @@ f16 = 8 hours free (full day)">?</span>
             renderRandomised();
             renderCalendar();
             saveState();
+            
+            // Focus the Before slot after rendering for keyboard workflow
+            setTimeout(() => {
+                const beforeSlot = document.querySelector('.before-slot');
+                if (beforeSlot) {
+                    beforeSlot.focus();
+                }
+            }, 100);
             
             // Show toast notification
             showToast("That's a bit random");
@@ -1666,12 +1681,17 @@ f16 = 8 hours free (full day)">?</span>
          * Arrow Up/Down: Navigate between slots
          */
         function handleSlotKeydown(e) {
+            // Prevent default for all handled keys to avoid page scrolling
+            if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+            }
+            
             if (e.key === ' ' || e.key === 'Spacebar') {
-                e.preventDefault();
                 pullItemIntoSlot(e.currentTarget);
-            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                navigateSlots(e.currentTarget, e.key === 'ArrowDown' ? 1 : -1);
+            } else if (e.key === 'ArrowDown') {
+                navigateSlots(e.currentTarget, 1);
+            } else if (e.key === 'ArrowUp') {
+                navigateSlots(e.currentTarget, -1);
             }
         }
 
