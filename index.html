@@ -52,6 +52,43 @@
             }
         }
 
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+            }
+
+            .input-column {
+                grid-column: 1;
+                grid-row: 1;
+            }
+
+            .randomised-column {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            .calendar-column {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            .randomised-column,
+            .calendar-column {
+                display: inline-block;
+                width: calc(50% - 0.5rem);
+                vertical-align: top;
+            }
+
+            .randomised-column {
+                margin-right: 0.5rem;
+            }
+
+            .calendar-column {
+                margin-left: 0.5rem;
+            }
+        }
+
         .column {
             background: #2d2d2d;
             border-radius: 8px;
@@ -280,6 +317,13 @@
         .lozenge:hover {
             transform: translateY(-1px);
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .lozenge.swiping {
+            opacity: 0.7;
+            z-index: 1000;
+            position: fixed;
+            pointer-events: none;
         }
 
         .lozenge.habit {
@@ -858,6 +902,11 @@ f8 = 4 hours free">?</span>
 
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragend', handleDragEnd);
+            
+            // Touch event listeners for mobile
+            div.addEventListener('touchstart', handleTouchStart, { passive: false });
+            div.addEventListener('touchmove', handleTouchMove, { passive: false });
+            div.addEventListener('touchend', handleTouchEnd, { passive: false });
 
             return div;
         }
@@ -914,6 +963,14 @@ f8 = 4 hours free">?</span>
         // Drag and drop handlers
         let draggedElement = null;
         let draggedData = null;
+
+        // Touch/swipe gesture handlers
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchElement = null;
+        let touchData = null;
+        let touchClone = null;
+        let isSwiping = false;
 
         function handleDragStart(e) {
             draggedElement = e.target;
@@ -1004,6 +1061,138 @@ f8 = 4 hours free">?</span>
             saveState();
 
             return false;
+        }
+
+        // Touch and swipe handlers for mobile
+        function handleTouchStart(e) {
+            if (e.target.classList.contains('lozenge')) {
+                touchElement = e.target;
+                touchData = {
+                    id: e.target.dataset.id,
+                    type: e.target.dataset.type,
+                    text: e.target.dataset.text
+                };
+                
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                
+                isSwiping = false;
+            }
+        }
+
+        function handleTouchMove(e) {
+            if (!touchElement) return;
+            
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            
+            // Start swiping if moved more than 10px
+            if (!isSwiping && (deltaX > 10 || deltaY > 10)) {
+                isSwiping = true;
+                
+                // Create visual clone
+                touchClone = touchElement.cloneNode(true);
+                touchClone.classList.add('swiping');
+                touchClone.style.left = touch.clientX + 'px';
+                touchClone.style.top = touch.clientY + 'px';
+                touchClone.style.width = touchElement.offsetWidth + 'px';
+                document.body.appendChild(touchClone);
+                
+                touchElement.style.opacity = '0.3';
+            }
+            
+            if (isSwiping) {
+                e.preventDefault();
+                touchClone.style.left = touch.clientX + 'px';
+                touchClone.style.top = touch.clientY + 'px';
+                
+                // Highlight drop target
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                document.querySelectorAll('.time-slot.drag-over').forEach(slot => {
+                    slot.classList.remove('drag-over');
+                });
+                
+                if (elementBelow) {
+                    const slot = elementBelow.closest('.time-slot.free');
+                    if (slot) {
+                        slot.classList.add('drag-over');
+                    }
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchElement) return;
+            
+            if (isSwiping && touchClone) {
+                const touch = e.changedTouches[0];
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                const slot = elementBelow ? elementBelow.closest('.time-slot.free') : null;
+                
+                document.querySelectorAll('.time-slot.drag-over').forEach(s => {
+                    s.classList.remove('drag-over');
+                });
+                
+                if (slot && touchData) {
+                    const slotIndex = parseInt(slot.dataset.index);
+                    const targetSlot = state.calendarSlots[slotIndex];
+                    
+                    // Check if dropping from randomised list
+                    if (touchData.id.startsWith('random-')) {
+                        if (targetSlot.items.length >= 4) {
+                            showToast('Slot full (max 4 items)');
+                        } else {
+                            // Add to calendar slot
+                            const newItem = {
+                                type: touchData.type,
+                                text: touchData.text,
+                                id: `placed-${Date.now()}-${Math.random()}`,
+                                originalId: touchData.id
+                            };
+                            targetSlot.items.push(newItem);
+                            
+                            // Remove from randomised list
+                            const randomIdx = parseInt(touchData.id.split('-')[1]);
+                            state.randomisedItems.splice(randomIdx, 1);
+                            
+                            saveState();
+                            renderRandomised();
+                            renderCalendar();
+                        }
+                    } else if (touchData.id.startsWith('placed-') || touchData.id.startsWith('project-')) {
+                        // Moving within calendar
+                        state.calendarSlots.forEach(s => {
+                            s.items = s.items.filter(item => item.id !== touchData.id);
+                        });
+                        
+                        if (targetSlot.items.length < 4) {
+                            targetSlot.items.push({
+                                type: touchData.type,
+                                text: touchData.text,
+                                id: touchData.id
+                            });
+                            
+                            saveState();
+                            renderRandomised();
+                            renderCalendar();
+                        }
+                    }
+                }
+                
+                // Cleanup
+                touchClone.remove();
+                touchClone = null;
+            }
+            
+            if (touchElement) {
+                touchElement.style.opacity = '';
+            }
+            
+            touchElement = null;
+            touchData = null;
+            isSwiping = false;
         }
 
         // Clear data
