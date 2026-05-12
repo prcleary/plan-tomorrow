@@ -8,6 +8,7 @@ A mobile-friendly single-page web application for planning your next day with in
 
 - **Smart Randomization**: Generates a weighted random sample of your tasks, emails, and habits based on priority
 - **Auto-Project Placement**: Automatically schedules one randomly-selected project for each 2-hour chunk in continuous free blocks
+- **Before/After Sections**: Unlimited capacity sections for items that don't fit in your scheduled day
 - **Weight Indicators**: Visual opacity and percentage indicators show relative priority of items
 - **Interactive Tooltips**: Hover to see probability weighting explanations for each item
 - **Drag-and-Drop**: Intuitive mouse/touch interface for arranging items in your calendar
@@ -88,6 +89,7 @@ Click **Run/Refresh** to:
 
 **General:**
 - Each free slot can hold **up to 4 items**
+- **Before** and **After** sections (green borders) accept **unlimited items** for overflow
 - Drag items back to the Randomised column to remove them
 - Meeting slots show "Meetings schmeetings" (non-editable)
 - Items are color-coded:
@@ -100,7 +102,7 @@ Click **Run/Refresh** to:
 
 **Copy Markdown:**
 - Click **Copy Markdown** to copy your schedule to clipboard
-- Format includes date heading, time slots, and task checkboxes (`- [ ]`)
+- Format includes date heading, Before section, time slots, After section, and task checkboxes (`- [ ]`)
 - Meeting slots are consolidated (e.g., "10:30 AM - 11:30 AM: Meetings schmeetings")
 - Paste into Obsidian, Notion, or any markdown-compatible app
 
