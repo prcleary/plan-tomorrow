@@ -252,6 +252,18 @@
             line-height: 1.4;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             transition: transform 0.2s, box-shadow 0.2s;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .lozenge:hover {
@@ -368,6 +380,49 @@
         .dragging {
             opacity: 0.5;
         }
+
+        .placeholder {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #666;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #27ae60;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 0.9rem;
+            z-index: 1000;
+            animation: slideInUp 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+            pointer-events: none;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -451,12 +506,16 @@ f8 = 4 hours free">?</span>
 
         <div class="column randomised-column">
             <h2>Randomised</h2>
-            <div id="randomisedList" class="randomised-list"></div>
+            <div id="randomisedList" class="randomised-list">
+                <div class="placeholder" id="randomisedPlaceholder">Click Run to generate items</div>
+            </div>
         </div>
 
         <div class="column calendar-column">
             <h2>Calendar</h2>
-            <div id="calendarContent" class="calendar-content"></div>
+            <div id="calendarContent" class="calendar-content">
+                <div class="placeholder" id="calendarPlaceholder">Click Run to build your schedule</div>
+            </div>
             <div class="buttons" style="margin-top: 1rem;">
                 <button id="printBtn" class="btn-print">Print Calendar</button>
             </div>
@@ -692,6 +751,9 @@ f8 = 4 hours free">?</span>
             renderRandomised();
             renderCalendar();
             saveState();
+            
+            // Show toast notification
+            showToast(`Calendar generated with ${state.randomisedItems.length} randomised items`);
         }
 
         // Auto-place projects in 2+ hour continuous free blocks
@@ -751,12 +813,24 @@ f8 = 4 hours free">?</span>
         // Render randomised list
         function renderRandomised() {
             const list = document.getElementById('randomisedList');
-            list.innerHTML = '';
-
-            state.randomisedItems.forEach((item, idx) => {
-                const lozenge = createLozenge(item, `random-${idx}`);
-                list.appendChild(lozenge);
+            const placeholder = document.getElementById('randomisedPlaceholder');
+            
+            // Remove all children except placeholder
+            Array.from(list.children).forEach(child => {
+                if (child.id !== 'randomisedPlaceholder') {
+                    list.removeChild(child);
+                }
             });
+
+            if (state.randomisedItems.length === 0) {
+                placeholder.style.display = 'block';
+            } else {
+                placeholder.style.display = 'none';
+                state.randomisedItems.forEach((item, idx) => {
+                    const lozenge = createLozenge(item, `random-${idx}`);
+                    list.appendChild(lozenge);
+                });
+            }
         }
 
         // Create lozenge element
@@ -779,7 +853,21 @@ f8 = 4 hours free">?</span>
         // Render calendar
         function renderCalendar() {
             const calendar = document.getElementById('calendarContent');
-            calendar.innerHTML = '';
+            const placeholder = document.getElementById('calendarPlaceholder');
+            
+            // Remove all children except placeholder
+            Array.from(calendar.children).forEach(child => {
+                if (child.id !== 'calendarPlaceholder') {
+                    calendar.removeChild(child);
+                }
+            });
+
+            if (state.calendarSlots.length === 0) {
+                placeholder.style.display = 'block';
+                return;
+            }
+            
+            placeholder.style.display = 'none';
 
             state.calendarSlots.forEach((slot, idx) => {
                 const slotDiv = document.createElement('div');
@@ -923,8 +1011,26 @@ f8 = 4 hours free">?</span>
                 
                 document.getElementById('inputForm').reset();
                 setDefaultStartTime();
-                document.getElementById('randomisedList').innerHTML = '';
-                document.getElementById('calendarContent').innerHTML = '';
+                
+                // Show placeholders
+                document.getElementById('randomisedPlaceholder').style.display = 'block';
+                document.getElementById('calendarPlaceholder').style.display = 'block';
+                
+                // Remove all items except placeholders
+                const randomisedList = document.getElementById('randomisedList');
+                Array.from(randomisedList.children).forEach(child => {
+                    if (child.id !== 'randomisedPlaceholder') {
+                        randomisedList.removeChild(child);
+                    }
+                });
+                
+                const calendarContent = document.getElementById('calendarContent');
+                Array.from(calendarContent.children).forEach(child => {
+                    if (child.id !== 'calendarPlaceholder') {
+                        calendarContent.removeChild(child);
+                    }
+                });
+                
                 updateCounters();
                 saveState();
                 validateForm();
@@ -934,6 +1040,18 @@ f8 = 4 hours free">?</span>
         // Print calendar
         function printCalendar() {
             window.print();
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 3000);
         }
 
         // Event listeners
