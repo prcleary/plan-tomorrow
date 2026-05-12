@@ -1358,17 +1358,20 @@ f16 = 8 hours free (full day)">?</span>
             // Get all droppable time slots (free slots + special slots) for keyboard navigation
             allTimeSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
             
-            // Check if user has already focused/selected a slot (via tab or click)
-            const currentlyFocusedSlot = document.activeElement;
-            const focusedSlotIndex = allTimeSlots.findIndex(slot => slot === currentlyFocusedSlot);
-            
-            if (focusedSlotIndex >= 0) {
-                // Start at the currently focused slot
-                currentSlotIndex = focusedSlotIndex;
+            // Check if user has clicked/selected a slot
+            let startIndex = 0;
+            if (lastClickedSlot && allTimeSlots.includes(lastClickedSlot)) {
+                startIndex = allTimeSlots.indexOf(lastClickedSlot);
             } else {
-                // Default to first slot
-                currentSlotIndex = 0;
+                // Also check document.activeElement as fallback
+                const currentlyFocusedSlot = document.activeElement;
+                const focusedSlotIndex = allTimeSlots.findIndex(slot => slot === currentlyFocusedSlot);
+                if (focusedSlotIndex >= 0) {
+                    startIndex = focusedSlotIndex;
+                }
             }
+            
+            currentSlotIndex = startIndex;
             
             if (allTimeSlots.length > 0) {
                 allTimeSlots[currentSlotIndex].classList.add('keyboard-target');
@@ -1553,6 +1556,9 @@ f16 = 8 hours free (full day)">?</span>
             beforeDiv.addEventListener('drop', handleSpecialDrop);
             beforeDiv.addEventListener('dragleave', handleDragLeave);
             beforeDiv.tabIndex = 0;
+            beforeDiv.addEventListener('click', function() {
+                lastClickedSlot = this;
+            });
             
             const beforeItemsDiv = document.createElement('div');
             beforeItemsDiv.className = 'slot-items';
@@ -1584,6 +1590,9 @@ f16 = 8 hours free (full day)">?</span>
                     
                     // Make free slots keyboard accessible
                     slotDiv.tabIndex = 0;
+                    slotDiv.addEventListener('click', function() {
+                        lastClickedSlot = this;
+                    });
 
                     const itemsDiv = document.createElement('div');
                     itemsDiv.className = 'slot-items';
@@ -1621,6 +1630,9 @@ f16 = 8 hours free (full day)">?</span>
             afterDiv.addEventListener('drop', handleSpecialDrop);
             afterDiv.addEventListener('dragleave', handleDragLeave);
             afterDiv.tabIndex = 0;
+            afterDiv.addEventListener('click', function() {
+                lastClickedSlot = this;
+            });
             
             const afterItemsDiv = document.createElement('div');
             afterItemsDiv.className = 'slot-items';
@@ -1643,6 +1655,7 @@ f16 = 8 hours free (full day)">?</span>
         let pickedData = null;
         let currentSlotIndex = 0;
         let allTimeSlots = [];
+        let lastClickedSlot = null; // Track the last clicked slot for keyboard navigation
 
         // Touch handling for mobile
         let touchStartX = 0;
