@@ -1036,14 +1036,32 @@ f16 = 8 hours free (full day)">?</span>
             return result;
         }
 
+        /**
+         * Clean item text by removing leading non-alphanumeric characters and whitespace
+         * Examples: "☐ Back up server" → "Back up server"
+         *           "  - Task name" → "Task name"
+         */
+        function cleanItemText(text) {
+            // Remove leading whitespace and non-alphanumeric characters
+            return text.replace(/^[\s\W]+/, '');
+        }
+
         // Process and run
         function run() {
-            // Collect inputs
+            // Collect inputs and clean them
             state.startTime = document.getElementById('startTime').value;
-            state.habits = document.getElementById('habits').value.split('\n').filter(x => x.trim());
-            state.projects = document.getElementById('projects').value.split('\n').filter(x => x.trim());
-            state.tasks = document.getElementById('tasks').value.split('\n').filter(x => x.trim());
-            state.emails = document.getElementById('emails').value.split('\n').filter(x => x.trim());
+            state.habits = document.getElementById('habits').value.split('\n')
+                .filter(x => x.trim())
+                .map(x => cleanItemText(x));
+            state.projects = document.getElementById('projects').value.split('\n')
+                .filter(x => x.trim())
+                .map(x => cleanItemText(x));
+            state.tasks = document.getElementById('tasks').value.split('\n')
+                .filter(x => x.trim())
+                .map(x => cleanItemText(x));
+            state.emails = document.getElementById('emails').value.split('\n')
+                .filter(x => x.trim())
+                .map(x => cleanItemText(x));
             state.calendar = document.getElementById('calendar').value.trim();
 
             // Assign weights (projects are handled separately, not in randomised list)
