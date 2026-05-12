@@ -1700,8 +1700,14 @@ f16 = 8 hours free (full day)">?</span>
                     afterItems: []
                 };
                 
-                document.getElementById('inputForm').reset();
+                // Clear form inputs manually instead of using form.reset()
+                // This ensures setDefaultStartTime() works correctly
                 setDefaultStartTime();
+                document.getElementById('habits').value = '';
+                document.getElementById('projects').value = '';
+                document.getElementById('tasks').value = '';
+                document.getElementById('emails').value = '';
+                document.getElementById('calendar').value = '';
                 
                 // Show placeholders
                 document.getElementById('randomisedPlaceholder').style.display = 'block';
