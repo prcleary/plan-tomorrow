@@ -185,6 +185,13 @@
             color: #e0e0e0;
         }
 
+        input[type="datetime-local"]:focus,
+        input[type="text"]:focus {
+            outline: 2px solid #4db8ff;
+            outline-offset: 2px;
+            border-color: #4db8ff;
+        }
+
         textarea {
             width: 100%;
             padding: 0.375rem;
@@ -195,6 +202,12 @@
             resize: none;
             background: #1a1a1a;
             color: #e0e0e0;
+        }
+
+        textarea:focus {
+            outline: 2px solid #4db8ff;
+            outline-offset: 2px;
+            border-color: #4db8ff;
         }
 
         .buttons {
@@ -214,6 +227,11 @@
             cursor: pointer;
             font-weight: 600;
             transition: background 0.3s;
+        }
+
+        button:focus {
+            outline: 2px solid #4db8ff;
+            outline-offset: 2px;
         }
 
         .btn-primary {
@@ -294,6 +312,18 @@
         .lozenge {
             position: relative;
             z-index: 1;
+        }
+
+        .lozenge:focus {
+            outline: 2px solid #4db8ff;
+            outline-offset: 2px;
+            z-index: 1001;
+        }
+
+        .lozenge.picked {
+            box-shadow: 0 0 0 3px #4db8ff;
+            transform: scale(1.05);
+            z-index: 1002;
         }
 
         .weight-indicator {
@@ -392,6 +422,17 @@
         .time-slot.free.drag-over {
             background: #2d5a3d;
             border-color: #27ae60;
+        }
+
+        .time-slot.free:focus {
+            outline: 2px solid #4db8ff;
+            outline-offset: 2px;
+        }
+
+        .time-slot.free.keyboard-target {
+            border-color: #4db8ff;
+            background: #2d5a3d;
+            box-shadow: 0 0 8px rgba(77, 184, 255, 0.5);
         }
 
         .time-label {
@@ -934,7 +975,148 @@ f8 = 4 hours free">?</span>
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragend', handleDragEnd);
 
+            // Make lozenges keyboard accessible
+            div.tabIndex = 0;
+            div.addEventListener('keydown', handleLozengeKeydown);
+
             return div;
+        }
+
+        // Keyboard navigation for lozenges
+        function handleLozengeKeydown(e) {
+            if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                
+                // Toggle pick up/put down
+                if (pickedElement === e.target) {
+                    // Put down (cancel)
+                    unpickItem();
+                } else {
+                    // Pick up new item
+                    pickUpItem(e.target);
+                }
+            } else if (e.key === 'Escape' && pickedElement) {
+                e.preventDefault();
+                unpickItem();
+            }
+        }
+
+        function pickUpItem(element) {
+            // Unpick any currently picked item
+            if (pickedElement) {
+                unpickItem();
+            }
+            
+            pickedElement = element;
+            pickedData = {
+                id: element.dataset.id,
+                type: element.dataset.type,
+                text: element.dataset.text
+            };
+            
+            element.classList.add('picked');
+            
+            // Get all time slots and set up keyboard navigation
+            allTimeSlots = Array.from(document.querySelectorAll('.time-slot.free'));
+            currentSlotIndex = 0;
+            
+            if (allTimeSlots.length > 0) {
+                allTimeSlots[0].classList.add('keyboard-target');
+                allTimeSlots[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            // Add keyboard navigation for arrow keys
+            document.addEventListener('keydown', handlePickedItemNavigation);
+            
+            showToast('Use Arrow keys to select slot, Space to place, Esc to cancel');
+        }
+
+        function unpickItem() {
+            if (pickedElement) {
+                pickedElement.classList.remove('picked');
+                pickedElement = null;
+                pickedData = null;
+            }
+            
+            // Remove keyboard navigation
+            document.removeEventListener('keydown', handlePickedItemNavigation);
+            
+            // Clear slot highlighting
+            allTimeSlots.forEach(slot => slot.classList.remove('keyboard-target'));
+            allTimeSlots = [];
+            currentSlotIndex = 0;
+        }
+
+        function handlePickedItemNavigation(e) {
+            if (!pickedElement || allTimeSlots.length === 0) return;
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                allTimeSlots[currentSlotIndex].classList.remove('keyboard-target');
+                currentSlotIndex = (currentSlotIndex + 1) % allTimeSlots.length;
+                allTimeSlots[currentSlotIndex].classList.add('keyboard-target');
+                allTimeSlots[currentSlotIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                allTimeSlots[currentSlotIndex].classList.remove('keyboard-target');
+                currentSlotIndex = (currentSlotIndex - 1 + allTimeSlots.length) % allTimeSlots.length;
+                allTimeSlots[currentSlotIndex].classList.add('keyboard-target');
+                allTimeSlots[currentSlotIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                placeItemInSlot(allTimeSlots[currentSlotIndex]);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                unpickItem();
+            }
+        }
+
+        function placeItemInSlot(slot) {
+            if (!pickedData) return;
+            
+            const slotIndex = parseInt(slot.dataset.index);
+            const targetSlot = state.calendarSlots[slotIndex];
+            
+            // Check if dropping from randomised list
+            if (pickedData.id.startsWith('random-')) {
+                if (targetSlot.items.length >= 4) {
+                    showToast('Slot full (max 4 items)');
+                    return;
+                }
+                
+                // Add to calendar slot
+                const newItem = {
+                    type: pickedData.type,
+                    text: pickedData.text,
+                    id: `placed-${Date.now()}-${Math.random()}`,
+                    originalId: pickedData.id
+                };
+                targetSlot.items.push(newItem);
+                
+                // Remove from randomised list
+                const randomIdx = parseInt(pickedData.id.split('-')[1]);
+                state.randomisedItems.splice(randomIdx, 1);
+                
+            } else if (pickedData.id.startsWith('placed-') || pickedData.id.startsWith('project-')) {
+                // Moving within calendar
+                state.calendarSlots.forEach(s => {
+                    s.items = s.items.filter(item => item.id !== pickedData.id);
+                });
+                
+                if (targetSlot.items.length < 4) {
+                    targetSlot.items.push({
+                        type: pickedData.type,
+                        text: pickedData.text,
+                        id: pickedData.id
+                    });
+                }
+            }
+            
+            unpickItem();
+            saveState();
+            renderRandomised();
+            renderCalendar();
+            showToast('Item placed!');
         }
 
         // Render calendar
@@ -970,6 +1152,9 @@ f8 = 4 hours free">?</span>
                     slotDiv.addEventListener('dragover', handleDragOver);
                     slotDiv.addEventListener('drop', handleDrop);
                     slotDiv.addEventListener('dragleave', handleDragLeave);
+                    
+                    // Make free slots keyboard accessible
+                    slotDiv.tabIndex = 0;
 
                     const itemsDiv = document.createElement('div');
                     itemsDiv.className = 'slot-items';
@@ -989,6 +1174,12 @@ f8 = 4 hours free">?</span>
         // Drag and drop handlers
         let draggedElement = null;
         let draggedData = null;
+
+        // Keyboard navigation state
+        let pickedElement = null;
+        let pickedData = null;
+        let currentSlotIndex = 0;
+        let allTimeSlots = [];
 
         function handleDragStart(e) {
             draggedElement = e.target;
