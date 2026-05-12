@@ -1367,13 +1367,13 @@ f16 = 8 hours free (full day)">?</span>
         }
 
         function handleDragOver(e) {
-            if (e.preventDefault) { || slot.classList.contains('special-slot')
+            if (e.preventDefault) {
                 e.preventDefault();
             }
             e.dataTransfer.dropEffect = 'move';
             
             const slot = e.currentTarget;
-            if (slot.classList.contains('free')) {
+            if (slot.classList.contains('free') || slot.classList.contains('special-slot')) {
                 slot.classList.add('drag-over');
             }
             return false;
