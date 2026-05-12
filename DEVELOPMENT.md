@@ -211,6 +211,99 @@ Meetings schmeetings
 - Button creation in `createLozenge()`: Lines ~1188-1196
 - `removeItem()` function: Lines ~1227-1265
 
+### 9. Keyboard Workflow (Redesigned)
+
+**Purpose:** Streamlined keyboard-only workflow for fast calendar filling
+
+**Implementation:**
+
+**Tab Order:**
+1. Form fields (Start Time → Habits → Projects → Tasks → Emails → Calendar)
+2. Run/Refresh button
+3. Clear Data button
+4. After clicking Run: Auto-focus on Before slot
+5. All droppable slots (Before → free slots → After)
+6. Print/Export buttons
+
+**Key Handlers:**
+- `handleSlotKeydown(e)` - Attached to all droppable slots (.free, .special-slot)
+- Space key: Calls `pullItemIntoSlot()` to take first item from randomised list
+- Tab/Shift+Tab: Native browser navigation between focusable elements
+
+**Function:** `pullItemIntoSlot(slotElement)`
+- Checks if randomised list has items
+- Identifies slot type (special vs regular) using dataset attributes
+- For special slots: Unlimited capacity, adds to beforeItems/afterItems array
+- For regular slots: Max 4 items, adds to calendarSlots[index].items
+- Removes item from randomisedItems array (splice at index 0)
+- Saves state and re-renders both lists
+- **Critical:** Stores slot identifier before rendering, then refocuses the same slot after render using CSS selectors
+
+**Focus Retention:**
+- Uses setTimeout with 50ms delay to wait for DOM update
+- For special slots: Queries by `[data-special-type="${slotId}"]`
+- For regular slots: Queries by `[data-index="${slotId}"]`
+- Allows rapid filling with repeated Space presses
+
+**Tab Index Management:**
+- All slots: `tabIndex = 0` (focusable)
+- X buttons: `tabIndex = -1` (excluded from tab order)
+- Lozenges: No tabIndex (not keyboard-focusable in new workflow)
+
+**Code Locations:**
+- `handleSlotKeydown()`: Lines ~1680-1688
+- `pullItemIntoSlot()`: Lines ~1693-1754
+- Slot event listeners: Lines ~1558, ~1595, ~1636
+- Auto-focus after Run: Lines ~1100-1107
+
+### 10. Item Text Cleaning
+
+**Purpose:** Remove checkbox symbols, bullets, and other leading characters from items
+
+**Implementation:**
+
+**Function:** `cleanItemText(text)`
+- Uses regex `/^[\s\W]+/` to match leading whitespace and non-word characters
+- `\s` matches any whitespace (spaces, tabs, newlines)
+- `\W` matches any non-word character (anything that isn't alphanumeric or underscore)
+- `^` anchor ensures only leading characters are removed
+- `+` matches one or more occurrences
+
+**Examples:**
+- `"☐ Back up server"` → `"Back up server"`
+- `"  - Task name"` → `"Task name"`
+- `"• Email person"` → `"Email person"`
+
+**Applied to:** All items during `run()` function before processing:
+- state.habits
+- state.projects
+- state.tasks
+- state.emails
+
+**Code Location:** Lines ~1040-1065
+
+### 11. Print Functionality
+
+**Purpose:** Multi-page printing support for long calendars
+
+**Implementation:**
+
+**CSS @media print overrides:**
+- Hide: header, input column, randomised column, buttons
+- Container: `display: block` (not flex grid)
+- Calendar column: Full width, auto height, no max-height, overflow visible
+- Calendar content: Block display, no flex constraints, auto height
+- Time slots: `page-break-inside: avoid` to keep slots intact
+- Slots: `page-break-after: auto` to allow natural breaks between slots
+
+**Key Fixes:**
+- Override `max-height: calc(100vh - 100px)` on column
+- Override `overflow: hidden` to `overflow: visible`
+- Override `flex: 1` with `flex: none` on content
+- All height constraints set to `auto !important`
+
+**Code Location:** @media print section, Lines ~609-645
+
 ## Critical Implementation Details
 
 ### Start Time Defaulting Issue (FIXED)
@@ -567,6 +660,9 @@ catch(e) { console.error('Corrupted:', e); }
 - Weight indicator repositioned to left side to avoid X button overlap
 - fadeIn animation removed for smoother drag-and-drop experience
 - Screenshot added to README
+- Keyboard workflow redesigned: Tab/Shift+Tab navigation, Space pulls items into focused slot
+- Item text cleaning added (removes leading non-alphanumeric characters and whitespace)
+- Print functionality fixed for multi-page printing
 
 ## Contributing Guidelines
 

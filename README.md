@@ -86,10 +86,14 @@ Click **Run/Refresh** to:
 - Tap the **X button** on the right side of any item to remove it
 
 **Using Keyboard:**
-- Tab to navigate between items and slots
-- Space to pick up/place an item
-- Arrow Up/Down to select destination slot when item is picked up
-- Escape to cancel
+- Fill form fields and press Tab to reach the Run button
+- After clicking Run, the Before slot automatically receives focus
+- Press **Tab** to navigate forward through slots (Before → free slots → After)
+- Press **Shift+Tab** to navigate backward through slots
+- Press **Space** to pull the first item from the Randomised list into the focused slot
+- Press **Space** multiple times to add multiple items to the same slot
+- Focus remains on the slot after adding items, allowing quick filling
+- Continue with Tab/Shift+Tab and Space to fill your entire calendar
 
 **General:**
 - Each free slot can hold **up to 4 items**
@@ -103,6 +107,7 @@ Click **Run/Refresh** to:
   - Orange = Projects
   - Blue = Tasks
   - Teal = Emails
+- Leading symbols and whitespace are automatically removed from items (e.g., "☐ Task" becomes "Task")
 
 ### 6. Export or Print
 
@@ -113,7 +118,9 @@ Click **Run/Refresh** to:
 - Paste into Obsidian, Notion, or any markdown-compatible app
 
 **Print Calendar:**
-- Click **Print Calendar** to generate a print-ready version (formatted for A4)
+- Click **Print Calendar** to generate a print-ready version
+- Supports multi-page printing for long calendars
+- Content automatically flows across pages with proper page breaks
 
 ### 7. Clear and Start Over
 
