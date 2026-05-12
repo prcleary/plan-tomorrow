@@ -622,7 +622,24 @@
 
             .calendar-column {
                 box-shadow: none;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .calendar-content {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+
+            .time-slot {
                 page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            /* Allow page breaks between slots */
+            .special-slot, .time-slot {
+                page-break-after: auto;
+                break-after: auto;
             }
         }
 
