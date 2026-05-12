@@ -917,7 +917,22 @@ f16 = 8 hours free (full day)">?</span>
             runBtn.textContent = isValid ? 'Run/Refresh' : 'Enter Data';
         }
 
-        // Parse calendar string
+        /**
+         * Parse calendar syntax string into array of time slots
+         * 
+         * Syntax:
+         * - 'f' = free half-hour
+         * - 'm' = meeting half-hour
+         * - Numbers after character multiply it (supports multi-digit)
+         * 
+         * Examples:
+         * - "fmfm" → ['free', 'meeting', 'free', 'meeting'] (2 hours)
+         * - "f8" → ['free', 'free', 'free', 'free', 'free', 'free', 'free', 'free'] (4 hours)
+         * - "m4f12" → 4 meetings + 12 free = 16 slots (8 hours)
+         * 
+         * @param {string} calendarStr - Calendar syntax string
+         * @returns {Array<string>} Array of 'free' or 'meeting' strings
+         */
         function parseCalendar(calendarStr) {
             const slots = [];
             let i = 0;
@@ -960,12 +975,29 @@ f16 = 8 hours free (full day)">?</span>
             return `${hours}:${minutesStr} ${ampm}`;
         }
 
-        // Get weighted random sample
+        /**
+         * Weighted random sample selection
+         * 
+         * Algorithm:
+         * 1. Calculate total weight of unselected items
+         * 2. Pick random number between 0 and total weight
+         * 3. Iterate through items, accumulating weights
+         * 4. Select item where cumulative weight exceeds random number
+         * 5. Repeat until maxItems reached or all items selected
+         * 
+         * This ensures higher-weighted items have proportionally higher probability
+         * of being selected, while still allowing randomness and variety.
+         * 
+         * @param {Array} items - Array of objects with 'weight' property
+         * @param {number} maxItems - Maximum number of items to select (default 50)
+         * @returns {Array} Randomly selected items in selection order
+         */
         function getWeightedRandomSample(items, maxItems = 50) {
             const selected = new Set();
             const result = [];
             
             while (result.length < Math.min(maxItems, items.length)) {
+                // Calculate total weight of remaining unselected items
                 let totalWeight = 0;
                 items.forEach((item, idx) => {
                     if (!selected.has(idx)) {
@@ -973,9 +1005,11 @@ f16 = 8 hours free (full day)">?</span>
                     }
                 });
                 
+                // Pick random point in weight range
                 let random = Math.random() * totalWeight;
                 let cumulative = 0;
                 
+                // Find item at that weight point
                 for (let i = 0; i < items.length; i++) {
                     if (selected.has(i)) continue;
                     
@@ -987,6 +1021,7 @@ f16 = 8 hours free (full day)">?</span>
                     }
                 }
                 
+                // Safety check: stop if all items selected
                 if (selected.size === items.length) break;
             }
             
@@ -1064,7 +1099,20 @@ f16 = 8 hours free (full day)">?</span>
             showToast("That's a bit random");
         }
 
-        // Auto-place projects in 2+ hour continuous free blocks
+        /**
+         * Auto-place projects in continuous free blocks of 2+ hours
+         * 
+         * Algorithm:
+         * 1. Scan calendar to find continuous free blocks (4+ half-hour slots = 2+ hours)
+         * 2. For each block, divide into 2-hour chunks
+         * 3. For each chunk, randomly select one project (weighted by priority)
+         * 4. Place project at the start of each 2-hour chunk
+         * 
+         * Note: Same project can be selected multiple times across different chunks.
+         * Projects are weighted from 0.9 (highest priority) to 0.5 (minimum).
+         * 
+         * @param {Array} projects - Array of project objects with 'text' and 'weight' properties
+         */
         function autoPlaceProjects(projects) {
             if (projects.length === 0) return;
             
@@ -1216,7 +1264,18 @@ f16 = 8 hours free (full day)">?</span>
             return div;
         }
 
-        // Remove an item from randomised list or calendar
+        /**
+         * Remove an item from randomised list or calendar
+         * 
+         * Handles removal based on item ID prefix:
+         * - 'random-': Removes from randomisedItems array
+         * - 'placed-' or 'project-': Removes from calendar slots and Before/After sections
+         * 
+         * Item is permanently removed until user clicks Run/Refresh to regenerate.
+         * No undo capability - user must re-randomize to get items back.
+         * 
+         * @param {string} id - Unique item identifier (e.g., 'random-0', 'placed-123456')
+         */
         function removeItem(id) {
             // Check if it's in the randomised list
             if (id.startsWith('random-')) {

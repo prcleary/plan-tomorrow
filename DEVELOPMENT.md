@@ -256,6 +256,60 @@ if (slot.classList.contains('free') || slot.classList.contains('special-slot')) 
 
 **Lesson:** Always validate syntax with `get_errors` tool before committing.
 
+### Timezone Issue with toISOString (FIXED)
+
+**Problem:** Start Time was displaying 08:00 instead of 09:00 when set to 9am tomorrow.
+
+**Root Cause:**
+- `toISOString()` converts Date to UTC format
+- For users in UTC+1 (British Summer Time), 9am local becomes 8am UTC
+- `datetime-local` input expects local time format, not UTC
+- Result: 08:00 displayed instead of intended 09:00
+
+**Solution:**
+Replaced UTC conversion with manual local time formatting:
+```javascript
+// WRONG (UTC time):
+const dateString = tomorrow.toISOString().slice(0, 16);
+
+// CORRECT (local time):
+const year = tomorrow.getFullYear();
+const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+const day = String(tomorrow.getDate()).padStart(2, '0');
+const hours = String(tomorrow.getHours()).padStart(2, '0');
+const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+const dateString = `${year}-${month}-${day}T${hours}:${minutes}`;
+```
+
+**Code Location:** `setDefaultStartTime()` - Line ~827
+
+**Lesson:** Always use local time formatting for `datetime-local` inputs. `toISOString()` is only appropriate when you need UTC or ISO 8601 format for APIs.
+
+### Weight Indicator Positioning (FIXED)
+
+**Problem:** X button was overlapping weight indicators on single-line items.
+
+**Root Cause:** Both weight indicator and X button were positioned on the right side (right: 4px).
+
+**Solution:**
+- Moved weight indicator to top-left: `left: 4px`
+- Adjusted lozenge padding: `padding-left: 22px` to match `padding-right: 22px`
+- X button remains on right side (vertically centered)
+
+**Code Locations:**
+- `.weight-indicator` CSS: Line ~402
+- `.lozenge` padding adjustment: Line ~447
+
+### fadeIn Animation Removed
+
+**Problem:** The 0.3s fadeIn animation made items appear to refresh/flicker when dragging, creating visual confusion.
+
+**Solution:** Removed `animation: fadeIn 0.3s ease-in;` from `.lozenge` CSS and deleted the `@keyframes fadeIn` rule.
+
+**Code Location:** `.lozenge` CSS: Line ~347
+
+**Reason:** Drag-and-drop requires instant visual feedback. Animation during list re-rendering created perception of lag and made the interface feel less responsive.
+
 ## File Structure
 
 ### HTML Structure
@@ -510,6 +564,9 @@ catch(e) { console.error('Corrupted:', e); }
 - Roboto font integration via Google Fonts
 - Timezone fix for Start Time (replaced UTC toISOString with local formatting)
 - Remove button (X) added to all lozenges for permanent item deletion
+- Weight indicator repositioned to left side to avoid X button overlap
+- fadeIn animation removed for smoother drag-and-drop experience
+- Screenshot added to README
 
 ## Contributing Guidelines
 
