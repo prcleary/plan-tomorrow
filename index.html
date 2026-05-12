@@ -1212,6 +1212,14 @@ f16 = 8 hours free (full day)">?</span>
                     });
 
                     slotDiv.appendChild(itemsDiv);
+                } else {
+                    // Add "Meetings schmeetings" text for meeting slots
+                    const meetingText = document.createElement('div');
+                    meetingText.style.fontSize = '0.6rem';
+                    meetingText.style.fontStyle = 'italic';
+                    meetingText.style.marginTop = '0.3rem';
+                    meetingText.textContent = 'Meetings schmeetings';
+                    slotDiv.appendChild(meetingText);
                 }
 
                 calendar.appendChild(slotDiv);
@@ -1529,8 +1537,9 @@ f16 = 8 hours free (full day)">?</span>
             
             // Group items by time slot
             state.calendarSlots.forEach(slot => {
+                const timeStr = formatTime(slot.time);
+                
                 if (slot.type === 'free' && slot.items.length > 0) {
-                    const timeStr = formatTime(slot.time);
                     markdown += `## ${timeStr}\n\n`;
                     
                     slot.items.forEach(item => {
@@ -1538,6 +1547,9 @@ f16 = 8 hours free (full day)">?</span>
                     });
                     
                     markdown += '\n';
+                } else if (slot.type === 'meeting') {
+                    markdown += `## ${timeStr}\n\n`;
+                    markdown += `Meetings schmeetings\n\n`;
                 }
             });
             
