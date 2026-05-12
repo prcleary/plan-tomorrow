@@ -483,22 +483,6 @@
             box-shadow: 0 0 8px rgba(77, 184, 255, 0.5);
         }
 
-        .special-slot {
-            background: #1f3d2f;
-            border: 2px dashed #4a7c59;
-            min-height: 70px;
-        }
-
-        .special-slot.drag-over {
-            background: #2d5a3d;
-            border-color: #27ae60;
-        }
-
-        .special-slot .time-label {
-            font-weight: bold;
-            color: #27ae60;
-        }
-
         .time-label {
             font-weight: 600;
             font-size: 0.6375rem;
@@ -700,9 +684,7 @@ f16 = 8 hours free (full day)">?</span>
             calendar: '',
             randomisedItems: [],
             calendarSlots: [],
-            placedItems: {},
-            beforeItems: [],
-            afterItems: []
+            placedItems: {}
         };
 
         // Load state from localStorage
@@ -1226,30 +1208,6 @@ f16 = 8 hours free (full day)">?</span>
             
             placeholder.style.display = 'none';
 
-            // Render Before section
-            const beforeDiv = document.createElement('div');
-            beforeDiv.className = 'time-slot special-slot before-slot';
-            beforeDiv.dataset.specialType = 'before';
-            
-            const beforeLabel = document.createElement('div');
-            beforeLabel.className = 'time-label';
-            beforeLabel.textContent = 'Before';
-            beforeDiv.appendChild(beforeLabel);
-            
-            beforeDiv.addEventListener('dragover', handleDragOver);
-            beforeDiv.addEventListener('drop', handleSpecialDrop);
-            beforeDiv.addEventListener('dragleave', handleDragLeave);
-            beforeDiv.tabIndex = 0;
-            
-            const beforeItemsDiv = document.createElement('div');
-            beforeItemsDiv.className = 'slot-items';
-            state.beforeItems.forEach(item => {
-                const lozenge = createLozenge(item, item.id);
-                beforeItemsDiv.appendChild(lozenge);
-            });
-            beforeDiv.appendChild(beforeItemsDiv);
-            calendar.appendChild(beforeDiv);
-
             state.calendarSlots.forEach((slot, idx) => {
                 const slotDiv = document.createElement('div');
                 slotDiv.className = `time-slot ${slot.type}`;
@@ -1289,30 +1247,6 @@ f16 = 8 hours free (full day)">?</span>
 
                 calendar.appendChild(slotDiv);
             });
-
-            // Render After section
-            const afterDiv = document.createElement('div');
-            afterDiv.className = 'time-slot special-slot after-slot';
-            afterDiv.dataset.specialType = 'after';
-            
-            const afterLabel = document.createElement('div');
-            afterLabel.className = 'time-label';
-            afterLabel.textContent = 'After';
-            afterDiv.appendChild(afterLabel);
-            
-            afterDiv.addEventListener('dragover', handleDragOver);
-            afterDiv.addEventListener('drop', handleSpecialDrop);
-            afterDiv.addEventListener('dragleave', handleDragLeave);
-            afterDiv.tabIndex = 0;
-            
-            const afterItemsDiv = document.createElement('div');
-            afterItemsDiv.className = 'slot-items';
-            state.afterItems.forEach(item => {
-                const lozenge = createLozenge(item, item.id);
-                afterItemsDiv.appendChild(lozenge);
-            });
-            afterDiv.appendChild(afterItemsDiv);
-            calendar.appendChild(afterDiv);
         }
 
         // Drag and drop handlers
@@ -1355,7 +1289,7 @@ f16 = 8 hours free (full day)">?</span>
             e.dataTransfer.dropEffect = 'move';
             
             const slot = e.currentTarget;
-            if (slot.classList.contains('free') || slot.classList.contains('special-slot')) {
+            if (slot.classList.contains('free')) {
                 slot.classList.add('drag-over');
             }
             return false;
@@ -1401,13 +1335,11 @@ f16 = 8 hours free (full day)">?</span>
                 state.randomisedItems.splice(randomIdx, 1);
 
             } else if (draggedData.id.startsWith('placed-') || draggedData.id.startsWith('project-')) {
-                // Moving within calendar or from special sections
-                // Find and remove from all locations
+                // Moving within calendar or back to randomised
+                // Find and remove from original slot
                 state.calendarSlots.forEach(s => {
                     s.items = s.items.filter(item => item.id !== draggedData.id);
                 });
-                state.beforeItems = state.beforeItems.filter(item => item.id !== draggedData.id);
-                state.afterItems = state.afterItems.filter(item => item.id !== draggedData.id);
 
                 // Add to target slot
                 if (targetSlot.items.length < 4) {
@@ -1417,60 +1349,6 @@ f16 = 8 hours free (full day)">?</span>
                         id: draggedData.id
                     });
                 }
-            }
-
-            renderRandomised();
-            renderCalendar();
-            saveState();
-
-            return false;
-        }
-
-        // Handle drops in Before/After special slots
-        function handleSpecialDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            e.preventDefault();
-
-            const slot = e.currentTarget;
-            slot.classList.remove('drag-over');
-
-            if (!draggedData) return;
-
-            const specialType = slot.dataset.specialType;
-            const targetArray = specialType === 'before' ? state.beforeItems : state.afterItems;
-
-            // Check if dropping from randomised list
-            if (draggedData.id.startsWith('random-')) {
-                // Add to special section (no limit)
-                const newItem = {
-                    type: draggedData.type,
-                    text: draggedData.text,
-                    id: `placed-${Date.now()}-${Math.random()}`,
-                    originalId: draggedData.id
-                };
-                targetArray.push(newItem);
-
-                // Remove from randomised list
-                const randomIdx = parseInt(draggedData.id.split('-')[1]);
-                state.randomisedItems.splice(randomIdx, 1);
-
-            } else if (draggedData.id.startsWith('placed-') || draggedData.id.startsWith('project-')) {
-                // Moving from calendar or other special section
-                // Remove from all locations
-                state.calendarSlots.forEach(s => {
-                    s.items = s.items.filter(item => item.id !== draggedData.id);
-                });
-                state.beforeItems = state.beforeItems.filter(item => item.id !== draggedData.id);
-                state.afterItems = state.afterItems.filter(item => item.id !== draggedData.id);
-
-                // Add to target
-                targetArray.push({
-                    type: draggedData.type,
-                    text: draggedData.text,
-                    id: draggedData.id
-                });
             }
 
             renderRandomised();
@@ -1537,7 +1415,7 @@ f16 = 8 hours free (full day)">?</span>
                 });
                 
                 if (elementBelow) {
-                    const slot = elementBelow.closest('.time-slot.free, .special-slot');
+                    const slot = elementBelow.closest('.time-slot.free');
                     if (slot) {
                         slot.classList.add('drag-over');
                     }
@@ -1551,41 +1429,46 @@ f16 = 8 hours free (full day)">?</span>
             if (isSwiping && touchClone) {
                 const touch = e.changedTouches[0];
                 const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-                const slot = elementBelow ? elementBelow.closest('.time-slot.free, .special-slot') : null;
+                const slot = elementBelow ? elementBelow.closest('.time-slot.free') : null;
                 
                 document.querySelectorAll('.time-slot.drag-over').forEach(s => {
                     s.classList.remove('drag-over');
                 });
                 
                 if (slot && touchData) {
-                    // Check if it's a special slot
-                    if (slot.classList.contains('special-slot')) {
-                        const specialType = slot.dataset.specialType;
-                        const targetArray = specialType === 'before' ? state.beforeItems : state.afterItems;
-                        
-                        if (touchData.id.startsWith('random-')) {
+                    const slotIndex = parseInt(slot.dataset.index);
+                    const targetSlot = state.calendarSlots[slotIndex];
+                    
+                    // Check if dropping from randomised list
+                    if (touchData.id.startsWith('random-')) {
+                        if (targetSlot.items.length >= 4) {
+                            showToast('Slot full (max 4 items)');
+                        } else {
+                            // Add to calendar slot
                             const newItem = {
                                 type: touchData.type,
                                 text: touchData.text,
                                 id: `placed-${Date.now()}-${Math.random()}`,
                                 originalId: touchData.id
                             };
-                            targetArray.push(newItem);
+                            targetSlot.items.push(newItem);
                             
+                            // Remove from randomised list
                             const randomIdx = parseInt(touchData.id.split('-')[1]);
                             state.randomisedItems.splice(randomIdx, 1);
                             
                             saveState();
                             renderRandomised();
                             renderCalendar();
-                        } else if (touchData.id.startsWith('placed-') || touchData.id.startsWith('project-')) {
-                            state.calendarSlots.forEach(s => {
-                                s.items = s.items.filter(item => item.id !== touchData.id);
-                            });
-                            state.beforeItems = state.beforeItems.filter(item => item.id !== touchData.id);
-                            state.afterItems = state.afterItems.filter(item => item.id !== touchData.id);
-                            
-                            targetArray.push({
+                        }
+                    } else if (touchData.id.startsWith('placed-') || touchData.id.startsWith('project-')) {
+                        // Moving within calendar
+                        state.calendarSlots.forEach(s => {
+                            s.items = s.items.filter(item => item.id !== touchData.id);
+                        });
+                        
+                        if (targetSlot.items.length < 4) {
+                            targetSlot.items.push({
                                 type: touchData.type,
                                 text: touchData.text,
                                 id: touchData.id
@@ -1594,53 +1477,6 @@ f16 = 8 hours free (full day)">?</span>
                             saveState();
                             renderRandomised();
                             renderCalendar();
-                        }
-                    } else {
-                        // Regular time slot
-                        const slotIndex = parseInt(slot.dataset.index);
-                        const targetSlot = state.calendarSlots[slotIndex];
-                        
-                        // Check if dropping from randomised list
-                        if (touchData.id.startsWith('random-')) {
-                            if (targetSlot.items.length >= 4) {
-                                showToast('Slot full (max 4 items)');
-                            } else {
-                                // Add to calendar slot
-                                const newItem = {
-                                    type: touchData.type,
-                                    text: touchData.text,
-                                    id: `placed-${Date.now()}-${Math.random()}`,
-                                    originalId: touchData.id
-                                };
-                                targetSlot.items.push(newItem);
-                                
-                                // Remove from randomised list
-                                const randomIdx = parseInt(touchData.id.split('-')[1]);
-                                state.randomisedItems.splice(randomIdx, 1);
-                                
-                                saveState();
-                                renderRandomised();
-                                renderCalendar();
-                            }
-                        } else if (touchData.id.startsWith('placed-') || touchData.id.startsWith('project-')) {
-                            // Moving within calendar
-                            state.calendarSlots.forEach(s => {
-                                s.items = s.items.filter(item => item.id !== touchData.id);
-                            });
-                            state.beforeItems = state.beforeItems.filter(item => item.id !== touchData.id);
-                            state.afterItems = state.afterItems.filter(item => item.id !== touchData.id);
-                            
-                            if (targetSlot.items.length < 4) {
-                                targetSlot.items.push({
-                                    type: touchData.type,
-                                    text: touchData.text,
-                                    id: touchData.id
-                                });
-                                
-                                saveState();
-                                renderRandomised();
-                                renderCalendar();
-                            }
                         }
                     }
                 }
@@ -1671,9 +1507,7 @@ f16 = 8 hours free (full day)">?</span>
                     calendar: '',
                     randomisedItems: [],
                     calendarSlots: [],
-                    placedItems: {},
-                    beforeItems: [],
-                    afterItems: []
+                    placedItems: {}
                 };
                 
                 document.getElementById('inputForm').reset();
@@ -1724,15 +1558,6 @@ f16 = 8 hours free (full day)">?</span>
             // Build markdown
             let markdown = `# ${dateStr} ${dayName} note\n\n`;
             
-            // Add Before section
-            if (state.beforeItems && state.beforeItems.length > 0) {
-                markdown += `## Before\n\n`;
-                state.beforeItems.forEach(item => {
-                    markdown += `- [ ] ${item.text}\n`;
-                });
-                markdown += '\n';
-            }
-            
             // Group items by time slot and consolidate consecutive meetings
             let i = 0;
             while (i < state.calendarSlots.length) {
@@ -1771,15 +1596,6 @@ f16 = 8 hours free (full day)">?</span>
                 } else {
                     i++;
                 }
-            }
-            
-            // Add After section
-            if (state.afterItems && state.afterItems.length > 0) {
-                markdown += `## After\n\n`;
-                state.afterItems.forEach(item => {
-                    markdown += `- [ ] ${item.text}\n`;
-                });
-                markdown += '\n';
             }
             
             // Copy to clipboard
