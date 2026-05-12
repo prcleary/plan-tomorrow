@@ -1355,8 +1355,8 @@ f16 = 8 hours free (full day)">?</span>
             
             element.classList.add('picked');
             
-            // Get all time slots and set up keyboard navigation
-            allTimeSlots = Array.from(document.querySelectorAll('.time-slot.free'));
+            // Get all droppable time slots (free slots + special slots) for keyboard navigation
+            allTimeSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
             currentSlotIndex = 0;
             
             if (allTimeSlots.length > 0) {
@@ -1413,41 +1413,92 @@ f16 = 8 hours free (full day)">?</span>
         function placeItemInSlot(slot) {
             if (!pickedData) return;
             
-            const slotIndex = parseInt(slot.dataset.index);
-            const targetSlot = state.calendarSlots[slotIndex];
+            // Check if this is a special slot (Before/After) or regular slot
+            const isSpecialSlot = slot.dataset.specialType !== undefined;
             
-            // Check if dropping from randomised list
-            if (pickedData.id.startsWith('random-')) {
-                if (targetSlot.items.length >= 4) {
-                    showToast('Slot full (max 4 items)');
-                    return;
-                }
+            if (isSpecialSlot) {
+                // Handle placement in Before/After sections (unlimited capacity)
+                const specialType = slot.dataset.specialType;
+                if (!state.beforeItems) state.beforeItems = [];
+                if (!state.afterItems) state.afterItems = [];
+                const targetArray = specialType === 'before' ? state.beforeItems : state.afterItems;
                 
-                // Add to calendar slot
-                const newItem = {
-                    type: pickedData.type,
-                    text: pickedData.text,
-                    id: `placed-${Date.now()}-${Math.random()}`,
-                    originalId: pickedData.id
-                };
-                targetSlot.items.push(newItem);
-                
-                // Remove from randomised list
-                const randomIdx = parseInt(pickedData.id.split('-')[1]);
-                state.randomisedItems.splice(randomIdx, 1);
-                
-            } else if (pickedData.id.startsWith('placed-') || pickedData.id.startsWith('project-')) {
-                // Moving within calendar
-                state.calendarSlots.forEach(s => {
-                    s.items = s.items.filter(item => item.id !== pickedData.id);
-                });
-                
-                if (targetSlot.items.length < 4) {
-                    targetSlot.items.push({
+                if (pickedData.id.startsWith('random-')) {
+                    // From randomised list to special section
+                    const newItem = {
+                        type: pickedData.type,
+                        text: pickedData.text,
+                        id: `placed-${Date.now()}-${Math.random()}`,
+                        originalId: pickedData.id
+                    };
+                    targetArray.push(newItem);
+                    
+                    // Remove from randomised list
+                    const randomIdx = parseInt(pickedData.id.split('-')[1]);
+                    state.randomisedItems.splice(randomIdx, 1);
+                    
+                } else if (pickedData.id.startsWith('placed-') || pickedData.id.startsWith('project-')) {
+                    // Moving from calendar or other special section
+                    state.calendarSlots.forEach(s => {
+                        s.items = s.items.filter(item => item.id !== pickedData.id);
+                    });
+                    state.beforeItems = state.beforeItems.filter(item => item.id !== pickedData.id);
+                    state.afterItems = state.afterItems.filter(item => item.id !== pickedData.id);
+                    
+                    targetArray.push({
                         type: pickedData.type,
                         text: pickedData.text,
                         id: pickedData.id
                     });
+                }
+            } else {
+                // Handle placement in regular calendar slot
+                const slotIndex = parseInt(slot.dataset.index);
+                const targetSlot = state.calendarSlots[slotIndex];
+                
+                // Check if dropping from randomised list
+                if (pickedData.id.startsWith('random-')) {
+                    if (targetSlot.items.length >= 4) {
+                        showToast('Slot full (max 4 items)');
+                        return;
+                    }
+                    
+                    // Add to calendar slot
+                    const newItem = {
+                        type: pickedData.type,
+                        text: pickedData.text,
+                        id: `placed-${Date.now()}-${Math.random()}`,
+                        originalId: pickedData.id
+                    };
+                    targetSlot.items.push(newItem);
+                    
+                    // Remove from randomised list
+                    const randomIdx = parseInt(pickedData.id.split('-')[1]);
+                    state.randomisedItems.splice(randomIdx, 1);
+                    
+                } else if (pickedData.id.startsWith('placed-') || pickedData.id.startsWith('project-')) {
+                    // Moving within calendar or from special sections
+                    state.calendarSlots.forEach(s => {
+                        s.items = s.items.filter(item => item.id !== pickedData.id);
+                    });
+                    if (state.beforeItems) {
+                        state.beforeItems = state.beforeItems.filter(item => item.id !== pickedData.id);
+                    }
+                    if (state.afterItems) {
+                        state.afterItems = state.afterItems.filter(item => item.id !== pickedData.id);
+                    }
+                    
+                    if (targetSlot.items.length < 4) {
+                        targetSlot.items.push({
+                            type: pickedData.type,
+                            text: pickedData.text,
+                            id: pickedData.id
+                        });
+                    } else {
+                        showToast('Slot full (max 4 items)');
+                        unpickItem();
+                        return;
+                    }
                 }
             }
             
