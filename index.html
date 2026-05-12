@@ -168,23 +168,22 @@
         .lozenge {
             background: #3498db;
             color: white;
-            padding: 0.5rem 0.8rem;
-            margin: 0.3rem 0;
-            border-radius: 20px;
+            padding: 0.4rem 0.6rem;
+            margin: 0.25rem 0;
+            border-radius: 6px;
             cursor: move;
             font-size: 0.85rem;
-            display: inline-block;
-            max-width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: block;
+            word-wrap: break-word;
+            white-space: normal;
+            line-height: 1.4;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .lozenge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
 
         .lozenge.habit {
@@ -651,10 +650,8 @@
             div.dataset.id = id;
             div.dataset.type = item.type;
             div.dataset.text = item.text;
-            div.title = item.text;
             
-            const displayText = item.text.length > 30 ? item.text.substring(0, 30) + '...' : item.text;
-            div.textContent = displayText;
+            div.textContent = item.text;
 
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragend', handleDragEnd);
