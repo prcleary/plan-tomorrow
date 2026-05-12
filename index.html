@@ -720,6 +720,12 @@ f16 = 8 hours free (full day)">?</span>
                 }
                 
                 restoreInputs();
+                
+                // If startTime was empty and got fixed, save it back to localStorage
+                if (saved.includes('"startTime":""') && state.startTime) {
+                    saveState();
+                }
+                
                 if (state.randomisedItems.length > 0 || state.calendarSlots.length > 0) {
                     renderRandomised();
                     renderCalendar();
