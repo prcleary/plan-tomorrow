@@ -682,7 +682,7 @@
     <header>
         <div class="header-left">
             <h1>Plan Tomorrow</h1>
-            <span class="instructions">Set start time, enter items, define calendar (f=free, m=meeting, numbers supported), click Run. Then use keyboard (Space=add item, arrows=navigate slots) or drag/swipe to schedule. Before/After sections accept unlimited items.</span>
+            <span class="instructions">Set start time, enter items, define calendar (f=free, m=meeting, numbers supported), click Run. Then use keyboard (Tab=next slot, Space=add item) or drag/swipe to schedule. Before/After sections accept unlimited items.</span>
         </div>
         <a href="https://github.com/prcleary/plan-tomorrow" target="_blank" rel="noopener noreferrer" class="source-link">Source</a>
     </header>
@@ -1679,20 +1679,12 @@ f16 = 8 hours free (full day)">?</span>
         /**
          * Handle keyboard navigation for slots
          * Space: Pull first item from randomised list into this slot
-         * Arrow Up/Down: Navigate between slots
+         * Tab/Shift+Tab: Navigate between slots
          */
         function handleSlotKeydown(e) {
-            // Prevent default for all handled keys to avoid page scrolling
-            if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                e.preventDefault();
-            }
-            
             if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
                 pullItemIntoSlot(e.currentTarget);
-            } else if (e.key === 'ArrowDown') {
-                navigateSlots(e.currentTarget, 1);
-            } else if (e.key === 'ArrowUp') {
-                navigateSlots(e.currentTarget, -1);
             }
         }
 
@@ -1706,7 +1698,9 @@ f16 = 8 hours free (full day)">?</span>
                 return;
             }
 
+            // Store slot identifier for re-focusing after render
             const isSpecialSlot = slotElement.dataset.specialType !== undefined;
+            const slotId = isSpecialSlot ? slotElement.dataset.specialType : slotElement.dataset.index;
 
             if (isSpecialSlot) {
                 // Handle Before/After sections (unlimited capacity)
@@ -1754,30 +1748,21 @@ f16 = 8 hours free (full day)">?</span>
             renderRandomised();
             renderCalendar();
             
-            // Re-focus the slot after rendering
+            // Re-focus the same slot after rendering
             setTimeout(() => {
-                const allSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
-                const slotIndex = allSlots.indexOf(slotElement);
-                if (slotIndex >= 0 && allSlots[slotIndex]) {
-                    allSlots[slotIndex].focus();
+                let targetSlot;
+                if (isSpecialSlot) {
+                    // Find special slot by data attribute
+                    targetSlot = document.querySelector(`.special-slot[data-special-type="${slotId}"]`);
+                } else {
+                    // Find regular slot by index
+                    targetSlot = document.querySelector(`.time-slot.free[data-index="${slotId}"]`);
                 }
-            }, 10);
-        }
-
-        /**
-         * Navigate between slots using arrow keys
-         */
-        function navigateSlots(currentSlot, direction) {
-            const allSlots = Array.from(document.querySelectorAll('.time-slot.free, .time-slot.special-slot'));
-            const currentIndex = allSlots.indexOf(currentSlot);
-            
-            if (currentIndex === -1) return;
-            
-            const nextIndex = currentIndex + direction;
-            if (nextIndex >= 0 && nextIndex < allSlots.length) {
-                allSlots[nextIndex].focus();
-                allSlots[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
+                
+                if (targetSlot) {
+                    targetSlot.focus();
+                }
+            }, 50);
         }
 
         // Touch handling for mobile
